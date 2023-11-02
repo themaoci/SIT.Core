@@ -1,6 +1,7 @@
 ﻿using BepInEx.Logging;
 using Comfort.Common;
 using EFT;
+using Newtonsoft.Json;
 using SIT.Coop.Core.Matchmaker;
 using SIT.Coop.Core.Player;
 using SIT.Core.Coop.World;
@@ -21,7 +22,8 @@ namespace SIT.Core.Coop.Components
     public class ActionPacketHandlerComponent : MonoBehaviour
     {
         public BlockingCollection<Dictionary<string, object>> ActionPackets { get; } = new(9999);
-        public BlockingCollection<Dictionary<string, object>> ActionPacketsMovement { get; private set; } = new(9999);
+        //public HashSet<string> ActionPackets2 { get; } = new(9999);
+        public BlockingCollection<Dictionary<string, object>> ActionPacketsMovement { get; private set; } = new(888);
         public BlockingCollection<Dictionary<string, object>> ActionPacketsDamage { get; private set; } = new(9999);
         public ConcurrentDictionary<string, EFT.Player> Players => CoopGameComponent.Players;
         public ManualLogSource Logger { get; private set; }
@@ -47,26 +49,12 @@ namespace SIT.Core.Coop.Components
         {
             CoopGameComponent = CoopPatches.CoopGameComponentParent.GetComponent<CoopGameComponent>();
             ActionPacketsMovement = new();
+
+            StartCoroutine(ProcessActionPackets());
+            StartCoroutine(ProcessMovementActionPackets());
         }
 
         void Update()
-        {
-            ProcessActionPackets();
-        }
-
-
-        public static ActionPacketHandlerComponent GetThisComponent()
-        {
-            if (CoopPatches.CoopGameComponentParent == null)
-                return null;
-
-            if (CoopPatches.CoopGameComponentParent.TryGetComponent<ActionPacketHandlerComponent>(out var component))
-                return component;
-
-            return null;
-        }
-
-        private void ProcessActionPackets()
         {
             if (CoopGameComponent == null)
             {
@@ -81,9 +69,6 @@ namespace SIT.Core.Coop.Components
             if (Singleton<GameWorld>.Instance == null)
                 return;
 
-            if (ActionPackets == null)
-                return;
-
             if (Players == null)
                 return;
 
@@ -94,48 +79,129 @@ namespace SIT.Core.Coop.Components
                 {
                     Stopwatch stopwatchActionPacket = Stopwatch.StartNew();
                     ProcessLastActionDataPacket(result);
+
                     if (stopwatchActionPacket.ElapsedMilliseconds > 1)
                         Logger.LogDebug($"ActionPacket {result["m"]} took {stopwatchActionPacket.ElapsedMilliseconds}ms to process!");
+
+                    result = null;
                 }
                 if (stopwatchActionPackets.ElapsedMilliseconds > 1)
                     Logger.LogDebug($"ActionPackets took {stopwatchActionPackets.ElapsedMilliseconds}ms to process!");
             }
+        }
 
-            if (ActionPacketsMovement != null && ActionPacketsMovement.Count > 0)
+
+        public static ActionPacketHandlerComponent GetThisComponent()
+        {
+            if (CoopPatches.CoopGameComponentParent == null)
+                return null;
+
+            if (CoopPatches.CoopGameComponentParent.TryGetComponent<ActionPacketHandlerComponent>(out var component))
+                return component;
+
+            return null;
+        }
+
+        private IEnumerator ProcessActionPackets()
+        {
+
+            while (true)
             {
-                Stopwatch stopwatchActionPacketsMovement = Stopwatch.StartNew();
-                while (ActionPacketsMovement.TryTake(out var result))
+                if (CoopGameComponent == null)
                 {
-                    ProcessLastActionDataPacket(result);
+                    if (CoopPatches.CoopGameComponentParent != null)
+                    {
+                        CoopGameComponent = CoopPatches.CoopGameComponentParent.GetComponent<CoopGameComponent>();
+                        if (CoopGameComponent == null)
+                            yield return null;
+                    }
                 }
-                if(stopwatchActionPacketsMovement.ElapsedMilliseconds > 1)
+
+                if (Singleton<GameWorld>.Instance == null)
+                    yield return null;
+
+                if (Players == null)
+                    yield return null;
+
+                if (ActionPackets.Count > 0)
                 {
-                    Logger.LogDebug($"ActionPacketsMovement took {stopwatchActionPacketsMovement.ElapsedMilliseconds}ms to process!");
+                    Stopwatch stopwatchActionPackets = Stopwatch.StartNew();
+                    while (ActionPackets.TryTake(out var result))
+                    {
+                        Stopwatch stopwatchActionPacket = Stopwatch.StartNew();
+                        ProcessLastActionDataPacket(result);
+
+                        if (stopwatchActionPacket.ElapsedMilliseconds > 1)
+                            Logger.LogDebug($"ActionPacket {result["m"]} took {stopwatchActionPacket.ElapsedMilliseconds}ms to process!");
+
+                        result = null;
+                        //yield return null;
+                    }
+                    if (stopwatchActionPackets.ElapsedMilliseconds > 1)
+                        Logger.LogDebug($"ActionPackets took {stopwatchActionPackets.ElapsedMilliseconds}ms to process!");
                 }
+
+                if (ActionPacketsDamage != null && ActionPacketsDamage.Count > 0)
+                {
+                    Stopwatch stopwatchActionPacketsDamage = Stopwatch.StartNew();
+                    while (ActionPacketsDamage.TryTake(out var packet))
+                    {
+                        var profileId = packet["profileId"].ToString();
+                        var playerKVP = CoopGameComponent.Players[profileId];
+                        if (playerKVP == null)
+                            yield return null;
+
+                        var coopPlayer = (CoopPlayer)playerKVP;
+                        coopPlayer.ReceiveDamageFromServer(packet);
+                    }
+                    if (stopwatchActionPacketsDamage.ElapsedMilliseconds > 1)
+                    {
+                        Logger.LogDebug($"ActionPacketsDamage took {stopwatchActionPacketsDamage.ElapsedMilliseconds}ms to process!");
+                    }
+                }
+
+                GCHelpers.DisableGC();
+
+                yield return new WaitForEndOfFrame();
             }
+        }
 
+        private IEnumerator ProcessMovementActionPackets()
+        {
 
-            if (ActionPacketsDamage != null && ActionPacketsDamage.Count > 0)
+            while (true)
             {
-                Stopwatch stopwatchActionPacketsDamage = Stopwatch.StartNew();
-                while (ActionPacketsDamage.TryTake(out var packet))
+                if (CoopGameComponent == null)
                 {
-                    var profileId = packet["profileId"].ToString();
-                    var playerKVP = CoopGameComponent.Players[profileId];
-                    if (playerKVP == null)
-                        return;
+                    if (CoopPatches.CoopGameComponentParent != null)
+                    {
+                        CoopGameComponent = CoopPatches.CoopGameComponentParent.GetComponent<CoopGameComponent>();
+                        if (CoopGameComponent == null)
+                            yield return null;
+                    }
+                }
 
-                    var coopPlayer = (CoopPlayer)playerKVP;
-                    coopPlayer.ReceiveDamageFromServer(packet);
-                }
-                if (stopwatchActionPacketsDamage.ElapsedMilliseconds > 1)
+                if (Singleton<GameWorld>.Instance == null)
+                    yield return null;
+
+                if (Players == null)
+                    yield return null;
+
+
+                if (ActionPacketsMovement != null && ActionPacketsMovement.Count > 0)
                 {
-                    Logger.LogDebug($"ActionPacketsDamage took {stopwatchActionPacketsDamage.ElapsedMilliseconds}ms to process!");
+                    Stopwatch stopwatchActionPacketsMovement = Stopwatch.StartNew();
+                    while (ActionPacketsMovement.TryTake(out var result))
+                    {
+                        ProcessLastActionDataPacket(result);
+                    }
+                    if (stopwatchActionPacketsMovement.ElapsedMilliseconds > 1)
+                        Logger.LogDebug($"ActionPacketsMovement took {stopwatchActionPacketsMovement.ElapsedMilliseconds}ms to process!");
                 }
+
+                yield return new WaitForFixedUpdate();
+
             }
-
-
-            return;
         }
 
         void ProcessLastActionDataPacket(Dictionary<string, object> packet)
@@ -223,14 +289,12 @@ namespace SIT.Core.Coop.Components
                 return false;
             }
 
-            //var profilePlayers = Players.Where(x => x.Key == profileId && x.Value != null).ToArray();
-
-            // ---------------------------------------------------
-            // Causes instance reference errors?
-            //var plyr = Singleton<GameWorld>.Instance.GetAlivePlayerByProfileID(profileId);// Players[profileId];
 
             // ---------------------------------------------------
             //
+            if (!Players.ContainsKey(profileId))
+                return false;
+
             var plyr = Players[profileId];
             bool processed = false;
 

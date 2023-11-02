@@ -66,7 +66,7 @@ namespace SIT.Core.Coop.Player.Proceed
 
             //Logger.LogInfo($"PlayerOnTryProceedPatch:Patch");
             Dictionary<string, object> args = new();
-            ItemAddressHelpers.ConvertItemAddressToDescriptor(foodDrink.CurrentAddress, ref args);
+            ItemAddressHelpers.ConvertItemAddressToDescriptor(foodDrink.CurrentAddress, ref args, out var gridItemAddressDescriptorTo, out var slotItemAddressDescriptorTo, out var stackSlotItemAddressDescriptorTo);
 
             args.Add("m", "ProceedFood");
             args.Add("amt", amount);

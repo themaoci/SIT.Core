@@ -238,12 +238,12 @@ namespace SIT.Core.Coop
                     await Task.Delay(1000);
 
                     counter++;
-                    if (counter == (60 * 5))
+                    if (counter == (60 * PluginConfigSettings.Instance.AdvancedSettings.SITGarbageCollectorIntervalMinutes))
                     {
                         GCHelpers.EnableGC();
                     }
 
-                    if (counter == (61 * 5))
+                    if (counter == (61 * PluginConfigSettings.Instance.AdvancedSettings.SITGarbageCollectorIntervalMinutes))
                     {
                         GCHelpers.DisableGC(true);
                         counter = 0;
@@ -260,7 +260,8 @@ namespace SIT.Core.Coop
             if (coopGame == null)
                 yield return null;
 
-            while (RunAsyncTasks)
+            //while (RunAsyncTasks)
+            for(;RunAsyncTasks;)
             {
                 yield return waitSeconds;
 
@@ -289,7 +290,6 @@ namespace SIT.Core.Coop
                 {
                     coopGame.ExtractingPlayers.Remove(player);
                     coopGame.ExtractedPlayers.Add(player);
-                    //LocalGameInstance.Stop(Singleton<GameWorld>.Instance.MainPlayer.ProfileId, ExitStatus.Survived, "", 0);
                 }
 
                 var world = Singleton<GameWorld>.Instance;
@@ -317,8 +317,6 @@ namespace SIT.Core.Coop
                             player.SwitchRenderer(false);
                         }
                     }
-                    //Singleton<GameWorld>.Instance.UnregisterPlayer(player);
-                    //GameObject.Destroy(player);
                 }
             }
         }
@@ -547,9 +545,6 @@ namespace SIT.Core.Coop
                 return;
             }
 
-            //MonoBehaviourSingleton<PreloaderUI>.Instance.SetBlackImageAlpha(0);
-
-            //LateUpdateSpan = DateTime.Now - DateTimeStart;
         }
 
         #endregion
@@ -849,7 +844,7 @@ namespace SIT.Core.Coop
                         return;
                     }
 
-                    Singleton<PoolManager>.Instance.LoadBundlesAndCreatePools(PoolManager.PoolsCategory.Raid, PoolManager.AssemblyType.Local, allPrefabPaths.ToArray(), JobPriority.General)
+                    Singleton<PoolManager>.Instance.LoadBundlesAndCreatePools(PoolManager.PoolsCategory.Raid, PoolManager.AssemblyType.Online, allPrefabPaths.ToArray(), JobPriority.General)
                         .ContinueWith(x =>
                         {
                             if (x.IsCompleted)
@@ -1301,24 +1296,24 @@ namespace SIT.Core.Coop
             }
 
             // ---------- 
-            if (player.PlayerHealthController != null)
-            {
-                foreach (var b in Enum.GetValues(typeof(EBodyPart)))
-                {
-                    var effects = player.PlayerHealthController
-                        .GetAllActiveEffects((EBodyPart)b).Where(x => !x.ToString().Contains("Exist"))
-                        .Select(x => x.ToString());
+            //if (player.PlayerHealthController != null)
+            //{
+            //    foreach (var b in Enum.GetValues(typeof(EBodyPart)))
+            //    {
+            //        var effects = player.PlayerHealthController
+            //            .GetAllActiveEffects((EBodyPart)b).Where(x => !x.ToString().Contains("Exist"))
+            //            .Select(x => x.ToString());
 
-                    if (!effects.Any())
-                        continue;
+            //        if (!effects.Any())
+            //            continue;
 
-                    var k = "hE." + b.ToString();
-                    //Logger.LogInfo(k);
-                    //Logger.LogInfo(effects.ToJson());
-                    dictPlayerState.Add(k, effects.ToJson());
-                }
+            //        var k = "hE." + b.ToString();
+            //        //Logger.LogInfo(k);
+            //        //Logger.LogInfo(effects.ToJson());
+            //        dictPlayerState.Add(k, effects.ToJson());
+            //    }
 
-            }
+            //}
             // ---------- 
 
 
@@ -1455,18 +1450,7 @@ namespace SIT.Core.Coop
                     break;
             }
 
-            //if(quitState != EQuitState.NONE)
-            //{
-            //    var rectEndOfGameButton = new Rect(rectEndOfGameMessage);
-            //    rectEndOfGameButton.y += 15;
-            //    if(GUI.Button(rectEndOfGameButton, "End Raid"))
-            //    {
-
-            //    }
-            //}
-
-
-            //OnGUI_DrawPlayerList(rect);
+            OnGUI_DrawPlayerList(rect);
             OnGUI_DrawPlayerFriendlyTags(rect);
             //OnGUI_DrawPlayerEnemyTags(rect);
 

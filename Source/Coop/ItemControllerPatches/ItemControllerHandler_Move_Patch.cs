@@ -176,9 +176,16 @@ namespace SIT.Core.Coop.ItemControllerPatches
         public void Replicated(ref Dictionary<string, object> packet)
         {
             //GetLogger(typeof(ItemControllerHandler_Move_Patch)).LogDebug("ItemControllerHandler_Move_Patch.Replicated");
+            ItemController itemController = null;
 
             var itemControllerId = packet["icId"].ToString();
             GetLogger().LogDebug($"Item Controller Id: {itemControllerId}");
+            if (!ItemFinder.TryFindItemController(itemControllerId, ref itemController))
+            {
+                GetLogger().LogError($"Unable to find ItemController for Id {itemControllerId}");
+                return;
+            }
+
             GetLogger().LogDebug($"Item Controller Current Id: {packet["icCId"]}");
 
             var itemId = packet["id"].ToString();
@@ -207,7 +214,6 @@ namespace SIT.Core.Coop.ItemControllerPatches
 
             try
             {
-                ItemController itemController = null;
                 ItemAddress address = null;
                 AbstractDescriptor descriptor = null;
                 if (packet.ContainsKey("grad"))
@@ -237,7 +243,7 @@ namespace SIT.Core.Coop.ItemControllerPatches
                     return;
                 }
 
-                if (!ItemFinder.TryFindItemController(descriptor.Container.ParentId, out itemController))
+                if (!ItemFinder.TryFindItemController(descriptor.Container.ParentId, ref itemController))
                 {
                     GetLogger().LogError("Unable to find ItemController");
                     return;

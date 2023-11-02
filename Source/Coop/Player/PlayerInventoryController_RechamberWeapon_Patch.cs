@@ -66,7 +66,8 @@ namespace SIT.Core.Coop.Player
 
             if (player.IsYourPlayer)
             {
-                if (ItemFinder.TryFindItemController(player.ProfileId, out ItemController itemController))
+                ItemController itemController = null;
+                if (ItemFinder.TryFindItemController(player.ProfileId, ref itemController))
                 {
                     if (ItemFinder.TryFindItem(itemPacket.ItemId, out Item item))
                     {

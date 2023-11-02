@@ -60,7 +60,8 @@ namespace SIT.Core.Coop.Player
             //if (HasProcessed(GetType(), player, itemPacket))
             //    return;
 
-            if (!ItemFinder.TryFindItemController(player.ProfileId, out var itemController))
+            ItemController itemController = null;
+            if (!ItemFinder.TryFindItemController(player.ProfileId, ref itemController))
             {
                 GetLogger().LogError("Unable to find itemController");
                 return;

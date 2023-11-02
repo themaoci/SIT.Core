@@ -30,7 +30,10 @@ namespace SIT.Core.Coop.Player.FirearmControllerPatches
             , MagazineClass magazine)
         {
             Dictionary<string, object> magAddressDict = new();
-            ItemAddressHelpers.ConvertItemAddressToDescriptor(magazine.CurrentAddress, ref magAddressDict);
+            ItemAddressHelpers.ConvertItemAddressToDescriptor(magazine.CurrentAddress, ref magAddressDict
+                , out var gridItemAddressDescriptorTo
+                    , out var slotItemAddressDescriptorTo
+                    , out var stackSlotItemAddressDescriptorTo);
 
             Dictionary<string, object> dictionary = new()
             {
@@ -60,7 +63,7 @@ namespace SIT.Core.Coop.Player.FirearmControllerPatches
                 {
 
                     var ma = JsonConvert.DeserializeObject<Dictionary<string, object>>(dict["ma"].ToString());
-                    ItemAddressHelpers.ConvertDictionaryToAddress(ma, out var magAddressGrid, out var magAddressSlot);
+                    ItemAddressHelpers.ConvertDictionaryToAddress(ma, out var magAddressGrid, out var magAddressSlot, out _);
 
                     var magazine = player.Profile.Inventory.GetAllItemByTemplate(dict["mg.tpl"].ToString())
                         .FirstOrDefault(x => x.Id == dict["mg.id"].ToString()) as MagazineClass;

@@ -81,22 +81,32 @@ namespace SIT.Core.Coop
             return inventoryController;
         }
 
-        public static bool TryFindItemController(string controllerId, out ItemController itemController)
+        public static bool TryFindItemController(string controllerId, ref ItemController itemController)
         {
             // Find in World
-            itemController = Singleton<GameWorld>.Instance.FindControllerById(controllerId);
-            if (itemController != null)
+            var icById = Singleton<GameWorld>.Instance.FindControllerById(controllerId);
+            if (icById != null)
+            {
+                itemController = icById;
                 return true;
+            }
 
             // Find a Player
             var coopGC = CoopGameComponent.GetCoopGameComponent();
-            if (coopGC == null) 
+            if (coopGC == null)
+            {
                 return false;
+            }
 
             if (!coopGC.Players.ContainsKey(controllerId))
                 return false;
 
-            itemController = GetPlayerInventoryController(coopGC.Players[controllerId]);
+            var plInvC = GetPlayerInventoryController(coopGC.Players[controllerId]);
+            if (plInvC != null)
+            {
+                itemController = plInvC;
+                return true;    
+            }
 
             return itemController != null;
 

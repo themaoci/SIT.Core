@@ -57,7 +57,7 @@ namespace SIT.Core.SP.PlayerPatches.Health
                 packet.Add("killerFaction", attacker.Side);
             }
 
-            AkiBackendCommunication.Instance.PostJsonAndForgetAsync("/client/raid/person/killed", JsonConvert.SerializeObject(packet));
+            //AkiBackendCommunication.Instance.PostJsonAndForgetAsync("/client/raid/person/killed", JsonConvert.SerializeObject(packet));
         }
 
         public static string GeneratePlayerNameWithSide(Player player)

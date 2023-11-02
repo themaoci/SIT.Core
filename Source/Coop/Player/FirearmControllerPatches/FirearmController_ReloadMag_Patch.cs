@@ -62,10 +62,16 @@ namespace SIT.Core.Coop.Player.FirearmControllerPatches
             }
 
             Dictionary<string, object> magAddressDict = new();
-            ItemAddressHelpers.ConvertItemAddressToDescriptor(magazine.CurrentAddress, ref magAddressDict);
+            ItemAddressHelpers.ConvertItemAddressToDescriptor(magazine.CurrentAddress, ref magAddressDict
+                                    , out var gridItemAddressDescriptorM
+                    , out var slotItemAddressDescriptorM
+                    , out var stackSlotItemAddressDescriptorM);
 
             Dictionary<string, object> gridAddressDict = new();
-            ItemAddressHelpers.ConvertItemAddressToDescriptor(gridItemAddress, ref gridAddressDict);
+            ItemAddressHelpers.ConvertItemAddressToDescriptor(gridItemAddress, ref gridAddressDict
+                , out var gridItemAddressDescriptorTo
+                    , out var slotItemAddressDescriptorTo
+                    , out var stackSlotItemAddressDescriptorTo);
 
             Dictionary<string, object> dictionary = new()
             {
@@ -112,10 +118,10 @@ namespace SIT.Core.Coop.Player.FirearmControllerPatches
                 try
                 {
                     var ma = JsonConvert.DeserializeObject<Dictionary<string, object>>(dict["ma"].ToString());
-                    ItemAddressHelpers.ConvertDictionaryToAddress(ma, out var magAddressGrid, out var magAddressSlot);
+                    ItemAddressHelpers.ConvertDictionaryToAddress(ma, out var magAddressGrid, out var magAddressSlot, out _);
 
                     var ga = JsonConvert.DeserializeObject<Dictionary<string, object>>(dict["ga"].ToString());
-                    ItemAddressHelpers.ConvertDictionaryToAddress(ga, out var gridAddressGrid, out var gridAddressSlot);
+                    ItemAddressHelpers.ConvertDictionaryToAddress(ga, out var gridAddressGrid, out var gridAddressSlot, out _);
 
                     var magTemplateId = dict["mg.tpl"].ToString();
                     var magItemId = dict["mg.id"].ToString();
@@ -208,11 +214,11 @@ namespace SIT.Core.Coop.Player.FirearmControllerPatches
             }
 
             ItemController itemController = null;
-            if (!ItemFinder.TryFindItemController(gridAddressGrid.Container.ParentId, out itemController))
+            if (!ItemFinder.TryFindItemController(gridAddressGrid.Container.ParentId, ref itemController))
             {
-                if (player != null && !ItemFinder.TryFindItemController(player.ProfileId, out itemController))
+                if (player != null && !ItemFinder.TryFindItemController(player.ProfileId, ref itemController))
                 {
-                    if (!ItemFinder.TryFindItemController(Singleton<GameWorld>.Instance.MainPlayer.ProfileId, out itemController))
+                    if (!ItemFinder.TryFindItemController(Singleton<GameWorld>.Instance.MainPlayer.ProfileId, ref itemController))
                     {
                         return false;
                     }

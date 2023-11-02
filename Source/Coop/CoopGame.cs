@@ -88,8 +88,8 @@ namespace SIT.Core.Coop
         {
             get
             {
-                if (WeatherController.Instance != null)
-                    return new WeatherCurve(new WeatherClass[1] { new WeatherClass() });
+                //if (WeatherController.Instance != null)
+                //    return new WeatherCurve(new WeatherClass[1] { new WeatherClass() });
 
                 return null;
             }
@@ -155,6 +155,8 @@ namespace SIT.Core.Coop
             coopGame.func_1 = (EFT.Player player) => GamePlayerOwner.Create<GamePlayerOwner>(player, inputTree, insurance, backEndSession, commonUI, preloaderUI, gameUI, coopGame.GameDateTime, location);
 
             //GCHelpers.EnableGC();
+            GCHelpers.EmptyWorkingSet();
+            GCHelpers.DisableGC();
             //coopGame.timeAndWeatherSettings = timeAndWeather;
 
             Singleton<ISITGame>.Create(coopGame);

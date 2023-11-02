@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS0618 // Type or member is obsolete
+using BepInEx.Logging;
 using EFT;
 using SIT.Coop.Core.Web;
 using SIT.Core.Coop;
@@ -31,8 +32,13 @@ namespace SIT.Coop.Core.Player
         public float ReplicatedMovementSpeed { get; set; }
         private float PoseLevelSmoothed { get; set; } = 1;
 
+        private HashSet<IPlayerPacketHandlerComponent> PacketHandlerComponents = new();
+
+        private ManualLogSource Logger { get; set; }
+
         void Awake()
         {
+            Logger = BepInEx.Logging.Logger.CreateLogSource(nameof(PlayerReplicatedComponent));
             //PatchConstants.Logger.LogDebug("PlayerReplicatedComponent:Awake");
         }
 
@@ -58,6 +64,8 @@ namespace SIT.Coop.Core.Player
             }
 
             //GCHelpers.EnableGC();
+
+            PacketHandlerComponents.Add(new MoveOperationPlayerPacketHandler());
         }
 
         public void ProcessPacket(Dictionary<string, object> packet)
@@ -66,28 +74,26 @@ namespace SIT.Coop.Core.Player
                 return;
 
             var method = packet["m"].ToString();
-
-            if (!ModuleReplicationPatch.Patches.ContainsKey(method))
-                return;
-
-            var patch = ModuleReplicationPatch.Patches[method];
-            if (patch != null)
-            {
-                patch.Replicated(player, packet);
-                return;
-            }
-
+            
             ProcessPlayerState(packet);
 
-            //var packetHandlerComponents = this.GetComponents<IPlayerPacketHandlerComponent>();
-            //if (packetHandlerComponents != null)
-            //{
-            //    packetHandlerComponents = packetHandlerComponents.Where(x => x.GetType() != typeof(PlayerReplicatedComponent)).ToArray();
-            //    foreach (var packetHandlerComponent in packetHandlerComponents)
-            //    {
-            //        packetHandlerComponent.ProcessPacket(packet);
-            //    }
-            //}
+            if (ModuleReplicationPatch.Patches.ContainsKey(method))
+            {
+                var patch = ModuleReplicationPatch.Patches[method];
+                if (patch != null)
+                {
+                    patch.Replicated(player, packet);
+                    return;
+                }
+            }
+
+            if (PacketHandlerComponents != null)
+            {
+                foreach (var packetHandlerComponent in PacketHandlerComponents)
+                {
+                    packetHandlerComponent.ProcessPacket(packet);
+                }
+            }
         }
 
         void ProcessPlayerState(Dictionary<string, object> packet)

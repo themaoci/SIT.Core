@@ -95,7 +95,6 @@ namespace SIT.Core.Core
                 RemoteEndPoint = PatchConstants.GetBackendUrl();
 
             GetHeaders();
-            ConnectToAkiBackend();
             PeriodicallySendPing();
             PeriodicallySendPooledData();
 
@@ -109,11 +108,6 @@ namespace SIT.Core.Core
 
             HighPingMode = PluginConfigSettings.Instance.CoopSettings.ForceHighPingMode;
 
-        }
-
-        private void ConnectToAkiBackend()
-        {
-            PooledJsonToPostToUrl.Add(new KeyValuePair<string, string>("/coop/connect", "{}"));
         }
 
         private Profile MyProfile { get; set; }
@@ -141,6 +135,7 @@ namespace SIT.Core.Core
 
             WebSocketPreviousReceived = new HashSet<string>();
             WebSocket = new WebSocketSharp.WebSocket(wsUrl);
+            //WebSocket.Compression = WebSocketSharp.CompressionMethod.Deflate;
             WebSocket.WaitTime = TimeSpan.FromMinutes(1);
             WebSocket.EmitOnPing = true;    
             WebSocket.Connect();
@@ -151,17 +146,6 @@ namespace SIT.Core.Core
             WebSocket.OnMessage += WebSocket_OnMessage;
             // ---
 
-            // Continously Ping from SIT.Core (Keep Alive)
-            //_ = Task.Run(async () =>
-            //{
-
-            //    while (WebSocket != null)
-            //    {
-            //        //WebSocket.Send((new { RandomPing = 0 }).ToJson());
-            //        await Task.Delay(1000);
-            //    }
-
-            //});
         }
 
         public void WebSocketClose()
@@ -238,7 +222,6 @@ namespace SIT.Core.Core
                 if (e.RawData.Length == 0)
                     return;
 
-                Dictionary<string, object> packet = null;
                 if (e.Data.IndexOf("{") > 0)
                     return;
 
@@ -246,10 +229,22 @@ namespace SIT.Core.Core
                     return;
 
 
-                if (WebSocketPreviousReceived.Contains(e.Data))
+                //if (WebSocketPreviousReceived.Contains(e.Data))
+                //    return;
+
+                //WebSocketPreviousReceived.Add(e.Data);
+
+                
+
+
+                if (!CoopGameComponent.TryGetCoopGameComponent(out var coopGameComponent))
                     return;
 
-                WebSocketPreviousReceived.Add(e.Data);
+                if (coopGameComponent == null || coopGameComponent.ActionPackets == null || coopGameComponent.ActionPacketHandler == null)
+                    return;
+
+
+                Dictionary<string, object> packet = null;
 
                 if (DEBUGPACKETS)
                 {
@@ -276,13 +271,6 @@ namespace SIT.Core.Core
                         }
                     }
                 }
-
-
-                if (!CoopGameComponent.TryGetCoopGameComponent(out var coopGameComponent))
-                    return;
-
-                if (coopGameComponent == null)
-                    return;
 
                 if (packet == null)
                     return;
@@ -451,17 +439,13 @@ namespace SIT.Core.Core
                     return;
                 }
 
-                // If this is a SIT serialization packet
+                // If this is a SIT serialization packet. Parse data to objects.
                 if (packet.ContainsKey("data") && packet.ContainsKey("m"))
                 {
                     var data = packet["data"];
                     if (data == null)
                         return;
-                    //Logger.LogInfo(" =============WebSocket_OnMessage========= ");
-                    //Logger.LogInfo(" ==================SIT Packet============= ");
-                    //Logger.LogInfo(packet.ToJson());
-                    //Logger.LogInfo(" ========================================= ");
-                    //if (!packet.ContainsKey("accountId"))
+                    
                     if (!packet.ContainsKey("profileId"))
                     {
                         packet.Add("profileId", packet["data"].ToString().Split(',')[0]);
@@ -469,36 +453,14 @@ namespace SIT.Core.Core
                 }
 
                 // -------------------------------------------------------
-                // Check the packet doesn't already exist in Coop Game Component Action Packets
-                //if (
-                //    // Quick Check -> This would likely not work because Contains uses Equals which doesn't work very well with Dictionary
-                //    coopGameComponent.ActionPackets.Contains(packet)
-                //    // Timestamp Check -> This would only work on the Dictionary (not the SIT serialization) packet
-                //    || coopGameComponent.ActionPackets.Any(x => packet.ContainsKey("t") && x.ContainsKey("t") && x["t"].ToString() == packet["t"].ToString())
-                //    )
-                //    return;
-
-                //Logger.LogInfo($"Step.2. Packet process. {packet.ToJson()}");
-                // -------------------------------------------------------
                 // Add to the Coop Game Component Action Packets
-                if (coopGameComponent == null || coopGameComponent.ActionPackets == null || coopGameComponent.ActionPacketHandler == null)
-                    return;
-
+               
                 if(packet.ContainsKey("m") 
                     && packet["m"].ToString() == "Move")
                     coopGameComponent.ActionPacketHandler.ActionPacketsMovement.TryAdd(packet);
                 else if (packet.ContainsKey("m")
                     && packet["m"].ToString() == "ApplyDamageInfo")
-                {
                     coopGameComponent.ActionPacketHandler.ActionPacketsDamage.TryAdd(packet);
-                    //var profileId = packet["profileId"].ToString();
-                    //var playerKVP = coopGameComponent.Players.First(x => x.Key == profileId);
-                    //if (playerKVP.Value == null)
-                    //    return;
-
-                    //var coopPlayer = (CoopPlayer)playerKVP.Value;
-                    //coopPlayer.ReceiveDamageFromServer(packet);
-                }
                 else
                     coopGameComponent.ActionPacketHandler.ActionPackets.TryAdd(packet);
 
@@ -523,22 +485,21 @@ namespace SIT.Core.Core
         public static bool DEBUGPACKETS { get; } = false;
 
         public bool HighPingMode { get; set; }
-        public BlockingCollection<string> PooledJsonToPost { get; } = new();
+        public HashSet<string> PooledJsonToPost { get; } = new();
         public BlockingCollection<byte[]> PooledBytesToPost { get; } = new();
-        public BlockingCollection<KeyValuePair<string, Dictionary<string, object>>> PooledDictionariesToPost { get; } = new();
-        public BlockingCollection<List<Dictionary<string, object>>> PooledDictionaryCollectionToPost { get; } = new();
+        //public BlockingCollection<KeyValuePair<string, Dictionary<string, object>>> PooledDictionariesToPost { get; } = new();
+        //public BlockingCollection<List<Dictionary<string, object>>> PooledDictionaryCollectionToPost { get; } = new();
 
         public BlockingCollection<KeyValuePair<string, string>> PooledJsonToPostToUrl { get; } = new();
 
-        public void SendDataToPool(string url, string serializedData)
-        {
-            PooledJsonToPostToUrl.Add(new(url, serializedData));
-        }
+        //public void SendDataToPool(string url, string serializedData)
+        //{
+        //    PooledJsonToPostToUrl.Add(new(url, serializedData));
+        //}
 
         public void SendDataToPool(string serializedData)
         {
-            if(WebSocket != null && WebSocket.ReadyState == WebSocketSharp.WebSocketState.Open)
-                WebSocket.Send(serializedData);
+            PooledJsonToPost.Add(serializedData);
         }
 
         public void SendDataToPool(byte[] serializedData)
@@ -556,12 +517,15 @@ namespace SIT.Core.Core
 
         public void SendDataToPool(string url, Dictionary<string, object> data)
         {
-            PooledDictionariesToPost.Add(new(url, data));
+            //PooledDictionariesToPost.Add(new(url, data));
+            PooledJsonToPost.Add(JsonConvert.SerializeObject(data));
         }
 
         public void SendListDataToPool(string url, List<Dictionary<string, object>> data)
         {
-            PooledDictionaryCollectionToPost.Add(data);
+            //PooledDictionaryCollectionToPost.Add(data);
+            PooledJsonToPost.Add(JsonConvert.SerializeObject(data));
+
         }
 
         public int HostPing { get; private set; } = 1;
@@ -605,6 +569,7 @@ namespace SIT.Core.Core
                                 while (PooledBytesToPost.TryTake(out var bytes))
                                 {
                                     WebSocket.Send(bytes);
+                                    await Task.Delay(awaitPeriod);
                                 }
                             }
                             else
@@ -613,56 +578,29 @@ namespace SIT.Core.Core
                             }
                         }
                     }
-                    //await Task.Delay(100);
-                    while (PooledDictionariesToPost.Any())
+
+                    if (PooledJsonToPost.Any())
                     {
-                        await Task.Delay(awaitPeriod);
-
-                        KeyValuePair<string, Dictionary<string, object>> d;
-                        if (PooledDictionariesToPost.TryTake(out d))
-                        {
-
-                            var url = d.Key;
-                            var json = JsonConvert.SerializeObject(d.Value);
-                            //var json = d.Value.ToJson();
-                            if (WebSocket != null)
-                            {
-                                if (WebSocket.ReadyState == WebSocketSharp.WebSocketState.Open)
-                                {
-                                    WebSocket.Send(json);
-                                }
-                                else
-                                {
-                                    WebSocket_OnError();
-                                }
-                            }
-                        }
-                    }
-
-                    if (PooledDictionaryCollectionToPost.TryTake(out var d2))
-                    {
-                        var json = JsonConvert.SerializeObject(d2);
                         if (WebSocket != null)
                         {
                             if (WebSocket.ReadyState == WebSocketSharp.WebSocketState.Open)
                             {
-                                WebSocket.Send(json);
+                                try
+                                {
+                                    var item = PooledJsonToPost.First();
+                                    PooledJsonToPost.Remove(item);
+                                    WebSocket.Send(item);
+                                }
+                                catch(Exception ex) 
+                                { 
+                                    Logger.LogError(ex);
+                                }
+
                             }
                             else
                             {
-                                PatchConstants.Logger.LogError($"WS:Periodic Send:PooledDictionaryCollectionToPost:Failed!");
+                                WebSocket_OnError();
                             }
-                        }
-                        json = null;
-                    }
-
-                    while (PooledJsonToPostToUrl.Any())
-                    {
-                        await Task.Delay(awaitPeriod);
-
-                        if (PooledJsonToPostToUrl.TryTake(out var kvp))
-                        {
-                            _ = await PostJsonAsync(kvp.Key, kvp.Value, timeout: 1000, debug: true);
                         }
                     }
 
@@ -924,20 +862,6 @@ namespace SIT.Core.Core
             }
             throw new Exception($"Unable to communicate with Aki Server {url} to post json data: {data}");
         }
-
-        public void PostJsonAndForgetAsync(string url, string data, bool compress = true, int timeout = DEFAULT_TIMEOUT_LONG_MS, bool debug = false)
-        {
-            SendDataToPool(url, data);
-            //try
-            //{
-            //    _ = Task.Run(() => PostJson(url, data, compress, timeout, debug));
-            //}
-            //catch (Exception ex)
-            //{
-            //    PatchConstants.Logger.LogError(ex);
-            //}
-        }
-
 
         /// <summary>
         /// Retrieves data asyncronously and parses to the desired type

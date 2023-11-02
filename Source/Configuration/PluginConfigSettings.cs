@@ -42,11 +42,15 @@ namespace SIT.Core.Configuration
 
             public bool UseSITGarbageCollector { get; set; }
 
+            public int SITGarbageCollectorIntervalMinutes { get; set; }
+
             public void GetSettings()
             {
                 UseSITGarbageCollector = StayInTarkovPlugin.Instance.Config.Bind
                 ("Advanced", "UseSITGarbageCollector", true, new ConfigDescription("Whether to use the Garbage Collector developed in to SIT OR leave it to BSG/Unity")).Value;
 
+                SITGarbageCollectorIntervalMinutes = StayInTarkovPlugin.Instance.Config.Bind
+               ("Advanced", "SITGarbageCollectorIntervalMinutes", 5, new ConfigDescription("Amount of time in minutes to wait between collections")).Value;
             }
         }
 

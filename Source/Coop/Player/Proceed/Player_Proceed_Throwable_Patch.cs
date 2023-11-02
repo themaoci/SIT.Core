@@ -75,7 +75,7 @@ namespace SIT.Core.Coop.Player.Proceed
 
             //Logger.LogInfo($"PlayerOnTryProceedPatch:Patch");
             Dictionary<string, object> args = new();
-            ItemAddressHelpers.ConvertItemAddressToDescriptor(throwWeap.CurrentAddress, ref args);
+            ItemAddressHelpers.ConvertItemAddressToDescriptor(throwWeap.CurrentAddress, ref args, out var gridItemAddressDescriptorTo, out var slotItemAddressDescriptorTo, out var stackSlotItemAddressDescriptorTo);
 
             args.Add("m", "ProceedThrowable");
             args.Add("t", DateTime.Now.Ticks);

@@ -70,7 +70,8 @@ namespace SIT.Core.Coop.Player
                 if (HasProcessed(GetType(), player, itemPacket))
                     return;
 
-                if (ItemFinder.TryFindItemController(player.ProfileId, out ItemController itemController))
+                ItemController itemController = null;
+                if (ItemFinder.TryFindItemController(player.ProfileId, ref itemController))
                 {
                     List<ItemsCount> destroyedItems = new();
 

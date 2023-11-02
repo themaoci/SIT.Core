@@ -110,12 +110,12 @@ namespace SIT.Core.Coop.Player
                 if (HasProcessed(GetType(), player, itemPacket))
                     return;
 
-                //if (CallLocally.ContainsKey(player.Profile.ProfileId))
-                //    return;
+            //if (CallLocally.ContainsKey(player.Profile.ProfileId))
+            //    return;
 
-                ////Logger.LogInfo($"ItemUiContext_ThrowItem_Patch.Replicated Profile Id {itemPacket.ProfileId}");
-
-                if(!ItemFinder.TryFindItemController(player.ProfileId, out var invController))
+            ////Logger.LogInfo($"ItemUiContext_ThrowItem_Patch.Replicated Profile Id {itemPacket.ProfileId}");
+            ItemController invController = null;
+                if(!ItemFinder.TryFindItemController(player.ProfileId, ref invController))
                 {
                     GetLogger().LogError($"Replicated. Unable to find Player Item Controller");
                     return;
