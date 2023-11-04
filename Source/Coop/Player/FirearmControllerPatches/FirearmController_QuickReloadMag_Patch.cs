@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 using SIT.Coop.Core.Web;
-using SIT.Core.Coop.ItemControllerPatches;
+//using SIT.Core.Coop.ItemControllerPatches;
 using SIT.Core.Misc;
 using SIT.Tarkov.Core;
 using System;
@@ -101,7 +101,7 @@ namespace SIT.Core.Coop.Player.FirearmControllerPatches
             }
 
             GetLogger(typeof(FirearmController_QuickReloadMag_Patch)).LogDebug($"{player.ProfileId} Notify to not use ICH Move Patch");
-            ItemControllerHandler_Move_Patch.DisableForPlayer.Add(player.ProfileId);
+            //ItemControllerHandler_Move_Patch.DisableForPlayer.Add(player.ProfileId);
 
             firearmCont.QuickReloadMag(magazine, (c) =>
             {
@@ -113,7 +113,7 @@ namespace SIT.Core.Coop.Player.FirearmControllerPatches
 
             });
             GetLogger(typeof(FirearmController_QuickReloadMag_Patch)).LogDebug($"{player.ProfileId} Notify to use ICH Move Patch");
-            ItemControllerHandler_Move_Patch.DisableForPlayer.Remove(player.ProfileId);
+            //ItemControllerHandler_Move_Patch.DisableForPlayer.Remove(player.ProfileId);
 
         }
     }

@@ -2,11 +2,13 @@
 using Comfort.Common;
 using EFT;
 using EFT.InventoryLogic;
+using JetBrains.Annotations;
 using Newtonsoft.Json;
 using SIT.Coop.Core.Web;
-using SIT.Core.Coop.ItemControllerPatches;
+//using SIT.Core.Coop.ItemControllerPatches;
 using SIT.Core.Coop.NetworkPacket;
 using SIT.Core.Core;
+using SIT.Core.Misc;
 using SIT.Tarkov.Core;
 using System.Collections.Generic;
 using System.Text;
@@ -38,21 +40,210 @@ namespace SIT.Core.Coop
         {
         }
 
-        protected override void Execute(SearchContentOperation operation, Callback callback)
+   //     public override void OutProcess(Item item, ItemAddress from, ItemAddress to, IBaseInventoryOperation operation, Callback callback)
+   //     {
+   //         BepInLogger.LogInfo($"OutProcess [item]");
+   //         BepInLogger.LogInfo($"{item}");
+   //         BepInLogger.LogInfo($"{to}");
+   //         BepInLogger.LogInfo($"{operation}");
+			////base.OutProcess(item, from, to, operation, callback);
+   //         callback.Succeed();
+   //         SendOutProcess(item, from, to, operation);
+   //     }
+
+		private void SendOutProcess(Item item, ItemAddress from, ItemAddress to, IBaseInventoryOperation operation)
+        {
+            // Send to the Echo (Server)
+            // GClass2698 (Item Move Operation?)
+			if (operation is BaseInventoryOperation inventoryOperation)
+			{
+                MoveOperationDescriptor moveOperationDescriptor = new MoveOperationDescriptor();
+                // From Packet
+                Dictionary<string, object> fromPacket = new();
+                ItemAddressHelpers.ConvertItemAddressToDescriptor(from
+                    , ref fromPacket
+                    , out var gridItemAddressDescriptorFrom
+                    , out var slotItemAddressDescriptorFrom
+                    , out var stackSlotItemAddressDescriptorFrom);
+                //ItemAddressHelpers.ConvertDictionaryToAddress(fromPacket, out var grid, out var slot, out var stack);
+                moveOperationDescriptor.From = gridItemAddressDescriptorFrom;
+                // To Packet
+                Dictionary<string, object> toPacket = new();
+                ItemAddressHelpers.ConvertItemAddressToDescriptor(to
+                    , ref toPacket
+                    , out var gridItemAddressDescriptorTo
+                    , out var slotItemAddressDescriptorTo
+                    , out var stackSlotItemAddressDescriptorTo);
+                //ItemAddressHelpers.ConvertDictionaryToAddress(toPacket, out var gridTo, out var slotTo, out var stackTo);
+                moveOperationDescriptor.To = gridItemAddressDescriptorTo;
+
+                //moveOperationDescriptor.OperationId = moveOperation.Id;
+                moveOperationDescriptor.ItemId = item.Id;
+
+                var moveOpJson = moveOperationDescriptor.SITToJson();
+                MoveOperationPacket moveOperationPacket = new MoveOperationPacket(player.ProfileId, item.Id, item.TemplateId);
+                moveOperationPacket.MoveOpJson = moveOpJson;
+               
+                AkiBackendCommunication.Instance.PostDownWebSocketImmediately(moveOperationPacket.SITToJson());
+            }
+
+            // GClass2698 (Item Move Operation?)
+            if (operation is MoveInternalOperation moveOperation)
+            {
+                MoveOperationDescriptor moveOperationDescriptor = new MoveOperationDescriptor();
+                // From Packet
+                Dictionary<string, object> fromPacket = new();
+                ItemAddressHelpers.ConvertItemAddressToDescriptor(moveOperation.From
+                    , ref fromPacket
+                    , out var gridItemAddressDescriptorFrom
+                    , out var slotItemAddressDescriptorFrom
+                    , out var stackSlotItemAddressDescriptorFrom);
+                //ItemAddressHelpers.ConvertDictionaryToAddress(fromPacket, out var grid, out var slot, out var stack);
+                moveOperationDescriptor.From = gridItemAddressDescriptorFrom;
+                // To Packet
+                Dictionary<string, object> toPacket = new();
+                ItemAddressHelpers.ConvertItemAddressToDescriptor(moveOperation.To
+                    , ref toPacket
+                    , out var gridItemAddressDescriptorTo
+                    , out var slotItemAddressDescriptorTo
+                    , out var stackSlotItemAddressDescriptorTo);
+                //ItemAddressHelpers.ConvertDictionaryToAddress(toPacket, out var gridTo, out var slotTo, out var stackTo);
+                moveOperationDescriptor.To = gridItemAddressDescriptorTo;
+
+                moveOperationDescriptor.OperationId = moveOperation.Id;
+                moveOperationDescriptor.ItemId = moveOperation.Item.Id;
+
+                var moveOpJson = moveOperationDescriptor.SITToJson();
+                MoveOperationPacket moveOperationPacket = new MoveOperationPacket(player.ProfileId, moveOperation.Item.Id, moveOperation.Item.TemplateId);
+                moveOperationPacket.MoveOpJson = moveOpJson;
+                //var str = moveOperationPacket.ToString();
+                //            BepInLogger.LogInfo(str);	
+                //var bytes = moveOperationPacket.Serialize();
+                //            AkiBackendCommunication.Instance.SendDataToPool(bytes);
+                //packet.Add("moveOpJson", moveOpJson);
+                //            packet.Add("m", "MoveOperation");
+
+                //BepInLogger.LogInfo(moveOperationPacket.SITToJson());
+                AkiBackendCommunication.Instance.PostDownWebSocketImmediately(moveOperationPacket.SITToJson());
+            }
+        }
+
+  //      public virtual void ReceiveOutProcess(Item item, ItemAddress from, ItemAddress to, IBaseInventoryOperation operation, Callback callback)
+  //      {
+  //          BepInLogger.LogInfo($"ReceiveOutProcess");
+  //          BepInLogger.LogInfo($"{item}");
+  //          BepInLogger.LogInfo($"{to}");
+  //          BepInLogger.LogInfo($"{operation}");
+		//	base.OutProcess(item, from, to, operation, callback);
+		//}
+
+        //public override void OutProcess(ItemController executor, Item item, ItemAddress from, ItemAddress to, IBaseInventoryOperation operation, Callback callback)
+        //{
+        //    //BepInLogger.LogInfo($"CoopInventoryController: OutProcess [executor]");
+        //    //BepInLogger.LogInfo($"CoopInventoryController: {item}");
+        //    //BepInLogger.LogInfo($"CoopInventoryController: {to}");
+        //    //BepInLogger.LogInfo($"CoopInventoryController: {operation}");
+        //    base.OutProcess(executor, item, from, to, operation, callback);
+        //    //base.method_37(item, to, operation, callback);
+        //    //callback.Succeed();
+        //    //SendOutProcess(item, from, to, operation);
+
+        //}
+
+        //public virtual void ReceiveOutProcess(ItemController executor, Item item, ItemAddress from, ItemAddress to, IBaseInventoryOperation operation, Callback callback)
+        //{
+        //    //BepInLogger.LogInfo($"ReceiveOutProcess");
+        //    //BepInLogger.LogInfo($"{item}");
+        //    //BepInLogger.LogInfo($"{to}");
+        //    //BepInLogger.LogInfo($"{operation}");
+        //    base.OutProcess(executor, item, from, to, operation, callback);
+        //}
+
+        public override void Execute(AbstractInternalOperation operation, [CanBeNull] Callback callback)
+        {
+            BepInLogger.LogInfo($"Execute");
+            BepInLogger.LogInfo($"{operation}");
+            //base.Execute(operation, callback);
+
+			SendExecute(operation);
+            callback.Succeed();
+        }
+
+        private void SendExecute(AbstractInternalOperation operation)
+		{
+            BepInLogger.LogInfo($"SendExecute");
+
+            if (operation is MoveInternalOperation moveOperation)
+            {
+                MoveOperationDescriptor moveOperationDescriptor = new MoveOperationDescriptor();
+                // From Packet
+                Dictionary<string, object> fromPacket = new();
+                ItemAddressHelpers.ConvertItemAddressToDescriptor(moveOperation.From
+                    , ref fromPacket
+                    , out var gridItemAddressDescriptorFrom
+                    , out var slotItemAddressDescriptorFrom
+                    , out var stackSlotItemAddressDescriptorFrom);
+
+                moveOperationDescriptor.From = gridItemAddressDescriptorFrom;
+                // To Packet
+                Dictionary<string, object> toPacket = new();
+                ItemAddressHelpers.ConvertItemAddressToDescriptor(moveOperation.To
+                    , ref toPacket
+                    , out var gridItemAddressDescriptorTo
+                    , out var slotItemAddressDescriptorTo
+                    , out var stackSlotItemAddressDescriptorTo);
+                moveOperationDescriptor.To = gridItemAddressDescriptorTo;
+
+                moveOperationDescriptor.OperationId = moveOperation.Id;
+                moveOperationDescriptor.ItemId = moveOperation.Item.Id;
+
+                var moveOpJson = moveOperationDescriptor.SITToJson();
+                MoveOperationPacket moveOperationPacket = new MoveOperationPacket(player.ProfileId, moveOperation.Item.Id, moveOperation.Item.TemplateId);
+                moveOperationPacket.MoveOpJson = moveOpJson;
+                
+                //BepInLogger.LogInfo(moveOperationPacket.SITToJson());
+                AkiBackendCommunication.Instance.PostDownWebSocketImmediately(moveOperationPacket.SITToJson());
+            }
+        }
+
+        public void ReceiveExecute(AbstractInternalOperation operation)
+        {
+            BepInLogger.LogInfo($"ReceiveExecute");
+            BepInLogger.LogInfo(operation);
+            base.Execute(operation, (result) => { BepInLogger.LogInfo(result); });
+        }
+
+        public override void Execute(SearchContentOperation operation, Callback callback)
         {
             BepInLogger.LogInfo($"CoopInventoryController: Execute");
             BepInLogger.LogInfo($"CoopInventoryController: {operation}");
             base.Execute(operation, callback);
         }
 
-        public override void InProcess(ItemController executor, Item item, ItemAddress to, bool succeed, IBaseInventoryOperation operation, Callback callback)
+        public override void ExecuteStop(SearchContentOperation operation)
         {
-            BepInLogger.LogInfo($"CoopInventoryController: InProcess");
-            BepInLogger.LogInfo($"CoopInventoryController: {item}");
-            BepInLogger.LogInfo($"CoopInventoryController: {to}");
+            BepInLogger.LogInfo($"CoopInventoryController: ExecuteStop");
             BepInLogger.LogInfo($"CoopInventoryController: {operation}");
-            base.InProcess(executor, item, to, succeed, operation, callback);
+            base.ExecuteStop(operation);
         }
+
+        //public override void InProcess(ItemController executor, Item item, ItemAddress to, bool succeed, IBaseInventoryOperation operation, Callback callback)
+        //{
+        //    //BepInLogger.LogInfo($"CoopInventoryController: InProcess");
+        //    //BepInLogger.LogInfo($"CoopInventoryController: {item}");
+        //    //BepInLogger.LogInfo($"CoopInventoryController: {to}");
+        //    //BepInLogger.LogInfo($"CoopInventoryController: {operation}");
+        //    base.InProcess(executor, item, to, succeed, operation, callback);
+        //}
+
+        //public virtual void ReceiveInProcess(ItemController executor, Item item, ItemAddress to, bool succeed, IBaseInventoryOperation operation, Callback callback)
+        //{
+        //    //BepInLogger.LogInfo($"ReceiveInProcess");
+        //    //BepInLogger.LogInfo($"{item}");
+        //    //BepInLogger.LogInfo($"{to}");
+        //    //BepInLogger.LogInfo($"{operation}");
+        //    base.InProcess(executor, item, to, succeed, operation, callback);
+        //}
 
         /// <summary>
         /// General Operations
@@ -61,55 +252,18 @@ namespace SIT.Core.Coop
         /// <returns></returns>
         public override bool vmethod_0(AbstractInternalOperation operation)
         {
-            BepInLogger.LogInfo($"CoopInventoryController: vmethod_0");
-            BepInLogger.LogInfo($"CoopInventoryController: {operation}");
+            //BepInLogger.LogInfo($"CoopInventoryController: vmethod_0");
+            //BepInLogger.LogInfo($"CoopInventoryController: {operation}");
 
-            // Send to the Echo (Server)
-            // GClass2698 (Item Move Operation?)
-			if(operation is GClass2698 moveOperation)
-			{
-                BepInLogger.LogInfo("Sending...");
 
-                Dictionary<string, object> packet = new Dictionary<string, object>();
-				
-				MoveOperationDescriptor moveOperationDescriptor = new MoveOperationDescriptor();
-				// From Packet
-				Dictionary<string, object> fromPacket = new();
-				ItemAddressHelpers.ConvertItemAddressToDescriptor(moveOperation.From
-					, ref fromPacket
-					, out var gridItemAddressDescriptorFrom
-					, out var slotItemAddressDescriptorFrom
-					, out var stackSlotItemAddressDescriptorFrom);
-				//ItemAddressHelpers.ConvertDictionaryToAddress(fromPacket, out var grid, out var slot, out var stack);
-				moveOperationDescriptor.From = gridItemAddressDescriptorFrom;
-				// To Packet
-				Dictionary<string, object> toPacket = new();
-				ItemAddressHelpers.ConvertItemAddressToDescriptor(moveOperation.To
-                    , ref toPacket
-                    , out var gridItemAddressDescriptorTo
-                    , out var slotItemAddressDescriptorTo
-                    , out var stackSlotItemAddressDescriptorTo);
-				//ItemAddressHelpers.ConvertDictionaryToAddress(toPacket, out var gridTo, out var slotTo, out var stackTo);
-				moveOperationDescriptor.To = gridItemAddressDescriptorTo;
-
-				moveOperationDescriptor.OperationId = moveOperation.Id;
-				moveOperationDescriptor.ItemId = moveOperation.Item.Id;
-
-				var moveOpJson = moveOperationDescriptor.SITToJson();
-				MoveOperationPacket moveOperationPacket = new MoveOperationPacket(player.ProfileId, moveOperation.Item.Id, moveOperation.Item.TemplateId);
-				moveOperationPacket.MoveOpJson = moveOpJson;
-				var str = moveOperationPacket.ToString();
-                BepInLogger.LogInfo(str);	
-				var bytes = moveOperationPacket.Serialize();
-                AkiBackendCommunication.Instance.SendDataToPool(bytes);
-            }
+			//return true;
 			// GClass2721 (Load Mag Operation?)
 			// GClass2730 (Split Bullet Operation?)
-            // GClass2734 (Unload Mag Operation?)
+			// GClass2734 (Unload Mag Operation?)
 			// 
 
 
-            /*
+			/*
              * if (descriptor is AddOperationDescriptor addOperationDescriptor)
 		{
 			AddOperationDescriptor descriptor2 = addOperationDescriptor;
@@ -294,13 +448,17 @@ namespace SIT.Core.Coop
 
 
 
-            return base.vmethod_0(operation);
-        }
+			//return base.vmethod_0(operation);
+			return true;
+		}
 
 		public virtual void ReceiveDoOperation(AbstractDescriptor2 descriptor)
         {
 			var invOp = player.ToInventoryOperation(descriptor);
-			base.vmethod_0(invOp.Value);
+			BepInLogger.LogInfo("ReceiveDoOperation");
+            BepInLogger.LogInfo(invOp);
+            base.vmethod_0(invOp.Value);
+
 		}
 
         public override Task<IResult> LoadMagazine(BulletClass sourceAmmo, MagazineClass magazine, int loadCount, bool ignoreRestrictions)
@@ -312,7 +470,7 @@ namespace SIT.Core.Coop
         public override Task<IResult> UnloadMagazine(MagazineClass magazine)
         {
             Task<IResult> result;
-            ItemControllerHandler_Move_Patch.DisableForPlayer.Add(Profile.ProfileId);
+            //ItemControllerHandler_Move_Patch.DisableForPlayer.Add(Profile.ProfileId);
 
             BepInLogger.LogInfo("UnloadMagazine");
             UnloadMagazinePacket unloadMagazinePacket = new(Profile.ProfileId, magazine.Id, magazine.TemplateId);
@@ -321,14 +479,14 @@ namespace SIT.Core.Coop
             //if (AlreadySent.Contains(serialized))
             {
                 result = base.UnloadMagazine(magazine);
-                ItemControllerHandler_Move_Patch.DisableForPlayer.Remove(Profile.ProfileId);
+                //ItemControllerHandler_Move_Patch.DisableForPlayer.Remove(Profile.ProfileId);
             }
 
             //AlreadySent.Add(serialized);
 
             AkiBackendCommunication.Instance.SendDataToPool(serialized);
             result = base.UnloadMagazine(magazine);
-            ItemControllerHandler_Move_Patch.DisableForPlayer.Remove(Profile.ProfileId);
+            //ItemControllerHandler_Move_Patch.DisableForPlayer.Remove(Profile.ProfileId);
             return result;
         }
 
@@ -344,9 +502,9 @@ namespace SIT.Core.Coop
             BepInLogger.LogInfo("ReceiveUnloadMagazineFromServer");
             if (ItemFinder.TryFindItem(unloadMagazinePacket.MagazineId, out Item magazine))
             {
-                ItemControllerHandler_Move_Patch.DisableForPlayer.Add(unloadMagazinePacket.ProfileId);
+                //ItemControllerHandler_Move_Patch.DisableForPlayer.Add(unloadMagazinePacket.ProfileId);
                 base.UnloadMagazine((MagazineClass)magazine);
-                ItemControllerHandler_Move_Patch.DisableForPlayer.Remove(unloadMagazinePacket.ProfileId);
+                //ItemControllerHandler_Move_Patch.DisableForPlayer.Remove(unloadMagazinePacket.ProfileId);
 
             }
         }

@@ -138,7 +138,7 @@ namespace SIT.Core.Coop.NetworkPacket
                     var prop = allPropsFiltered[i];
                     binaryWriter.WriteNonPrefixedString(prop.GetValue(this).ToString());
                     if (i != allPropsFiltered.Count() - 1)
-                        binaryWriter.WriteNonPrefixedString(",");
+                        binaryWriter.WriteNonPrefixedString(SerializerExtensions.SplitChar.ToString());
                 }
                 result = ((MemoryStream)binaryWriter.BaseStream).ToArray();
             }
@@ -175,6 +175,8 @@ namespace SIT.Core.Coop.NetworkPacket
     {
         private static Dictionary<Type, PropertyInfo[]> TypeToPropertyInfos = new Dictionary<Type, PropertyInfo[]>();
 
+        public static char SplitChar = ',';
+
         static SerializerExtensions()
         {
             // Use the static Serializer Extensions to pre populate all Network Packet Property Infos
@@ -199,7 +201,9 @@ namespace SIT.Core.Coop.NetworkPacket
         {
             Stopwatch sw = Stopwatch.StartNew();
 
-            var separatedPacket = serializedPacket.Split(',');
+            //PatchConstants.Logger.LogDebug($"DeserializePacketSIT: {serializedPacket}");
+
+            var separatedPacket = serializedPacket.Split(SplitChar);
             var index = 0;
 
             foreach (var prop in TypeToPropertyInfos[obj.GetType()])
@@ -224,7 +228,10 @@ namespace SIT.Core.Coop.NetworkPacket
                         prop.SetValue(obj, int.Parse(separatedPacket[index].ToString()));
                         break;
                     case "Double":
-                        prop.SetValue(obj, double.Parse(separatedPacket[index].ToString()));
+                        if (double.TryParse(separatedPacket[index].ToString(), out var d))
+                            prop.SetValue(obj, d);
+                        else
+                            PatchConstants.Logger.LogError($"{prop.Name} of type {prop.PropertyType.Name} could with value {separatedPacket[index].ToString()} not be parsed by SIT Deserializer!");
                         break;
                     case "Byte":
                         prop.SetValue(obj, byte.Parse(separatedPacket[index].ToString()));

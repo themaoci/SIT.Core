@@ -5,6 +5,7 @@ using SIT.Coop.Core.Web;
 using SIT.Core.Coop;
 using SIT.Core.Coop.Components;
 using SIT.Core.Coop.NetworkPacket;
+using SIT.Core.Coop.PacketHandlers;
 using SIT.Core.Coop.Player;
 using SIT.Core.Misc;
 using SIT.Core.SP.Raid;

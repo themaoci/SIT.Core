@@ -2,7 +2,7 @@
 using Comfort.Common;
 using EFT;
 using EFT.InventoryLogic;
-using SIT.Core.Coop.ItemControllerPatches;
+//using SIT.Core.Coop.ItemControllerPatches;
 using SIT.Core.Coop.NetworkPacket;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -20,7 +20,7 @@ namespace SIT.Core.Coop
             BepInLogger = BepInEx.Logging.Logger.CreateLogSource(nameof(CoopInventoryController));
         }
 
-        protected override void Execute(SearchContentOperation operation, Callback callback)
+        public override void Execute(SearchContentOperation operation, Callback callback)
         {
             base.Execute(operation, callback);
         }
@@ -43,10 +43,10 @@ namespace SIT.Core.Coop
             BepInLogger.LogInfo("ReceiveUnloadMagazineFromServer");
             if (ItemFinder.TryFindItem(unloadMagazinePacket.MagazineId, out Item magazine))
             {
-                ItemControllerHandler_Move_Patch.DisableForPlayer.Add(unloadMagazinePacket.ProfileId);
+                //ItemControllerHandler_Move_Patch.DisableForPlayer.Add(unloadMagazinePacket.ProfileId);
                 base.UnloadMagazine((MagazineClass)magazine).ContinueWith(x =>
                 {
-                    ItemControllerHandler_Move_Patch.DisableForPlayer.Remove(unloadMagazinePacket.ProfileId);
+                    //ItemControllerHandler_Move_Patch.DisableForPlayer.Remove(unloadMagazinePacket.ProfileId);
                 });
             }
         }

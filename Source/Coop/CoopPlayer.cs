@@ -75,9 +75,11 @@ namespace SIT.Core.Coop
             }
             player.IsYourPlayer = isYourPlayer;
 
-            InventoryController inventoryController = isYourPlayer && !isClientDrone 
-                ? new CoopInventoryController(player, profile, true) 
-                : new CoopInventoryControllerForClientDrone(player, profile, true);
+            //InventoryController inventoryController = isYourPlayer && !isClientDrone 
+            //    ? new CoopInventoryController(player, profile, true) 
+            //    : new CoopInventoryControllerForClientDrone(player, profile, true);
+
+            InventoryController inventoryController = new CoopInventoryController(player, profile, true);
 
             if (questController == null && isYourPlayer)
             {
@@ -221,15 +223,15 @@ namespace SIT.Core.Coop
 
         }
 
-        protected override void OnSkillLevelChanged(AbstractSkill skill)
-        {
-            //base.OnSkillLevelChanged(skill);
-        }
+        //public override void OnSkillLevelChanged(AbstractSkill skill)
+        //{
+        //    //base.OnSkillLevelChanged(skill);
+        //}
 
-        protected override void OnWeaponMastered(MasterSkill masterSkill)
-        {
-            //base.OnWeaponMastered(masterSkill);
-        }
+        //public override void OnWeaponMastered(MasterSkill masterSkill)
+        //{
+        //    //base.OnWeaponMastered(masterSkill);
+        //}
 
         public override void Heal(EBodyPart bodyPart, float value)
         {

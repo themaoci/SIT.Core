@@ -485,7 +485,7 @@ namespace SIT.Core.Core
         public static bool DEBUGPACKETS { get; } = false;
 
         public bool HighPingMode { get; set; }
-        public HashSet<string> PooledJsonToPost { get; } = new();
+        public BlockingCollection<string> PooledJsonToPost { get; } = new();
         public BlockingCollection<byte[]> PooledBytesToPost { get; } = new();
         //public BlockingCollection<KeyValuePair<string, Dictionary<string, object>>> PooledDictionariesToPost { get; } = new();
         //public BlockingCollection<List<Dictionary<string, object>>> PooledDictionaryCollectionToPost { get; } = new();
@@ -587,9 +587,11 @@ namespace SIT.Core.Core
                             {
                                 try
                                 {
-                                    var item = PooledJsonToPost.First();
-                                    PooledJsonToPost.Remove(item);
-                                    WebSocket.Send(item);
+                                    //WebSocket.Send(JsonConvert.SerializeObject(PooledJsonToPost));
+                                    while (PooledJsonToPost.TryTake(out var item))
+                                    {
+                                        WebSocket.Send(item);
+                                    }
                                 }
                                 catch(Exception ex) 
                                 { 

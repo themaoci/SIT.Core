@@ -2,7 +2,7 @@
 using SIT.Coop.Core.LocalGame;
 using SIT.Coop.Core.Matchmaker;
 using SIT.Coop.Core.Player;
-using SIT.Core.Coop.ItemControllerPatches;
+//using SIT.Core.Coop.ItemControllerPatches;
 using SIT.Core.Coop.LocalGame;
 using SIT.Core.Coop.Sounds;
 using SIT.Core.Coop.World;
@@ -86,7 +86,7 @@ namespace SIT.Core.Coop
 
                 NoMRPPatches.Add(new WeaponSoundPlayer_FireSonicSound_Patch());
 
-                NoMRPPatches.Add(new ItemControllerHandler_Move_Patch());
+                //NoMRPPatches.Add(new ItemControllerHandler_Move_Patch());
 
                 NoMRPPatches.Add(new Door_Interact_Patch());
                 NoMRPPatches.Add(new KeycardDoor_Interact_Patch());
