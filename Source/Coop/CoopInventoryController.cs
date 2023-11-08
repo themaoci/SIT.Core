@@ -10,14 +10,17 @@ using SIT.Core.Coop.NetworkPacket;
 using SIT.Core.Core;
 using SIT.Core.Misc;
 using SIT.Tarkov.Core;
+using System;
 using System.Collections.Generic;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using static GClass3038;
 
 namespace SIT.Core.Coop
 {
     internal class CoopInventoryController
-        : EFT.Player.PlayerInventoryController, ICoopInventoryController
+        : EFT.Player.PlayerOwnerInventoryController, ICoopInventoryController
     {
         ManualLogSource BepInLogger { get; set; }
 
@@ -40,138 +43,107 @@ namespace SIT.Core.Coop
         {
         }
 
-   //     public override void OutProcess(Item item, ItemAddress from, ItemAddress to, IBaseInventoryOperation operation, Callback callback)
-   //     {
-   //         BepInLogger.LogInfo($"OutProcess [item]");
-   //         BepInLogger.LogInfo($"{item}");
-   //         BepInLogger.LogInfo($"{to}");
-   //         BepInLogger.LogInfo($"{operation}");
-			////base.OutProcess(item, from, to, operation, callback);
-   //         callback.Succeed();
-   //         SendOutProcess(item, from, to, operation);
-   //     }
-
-		private void SendOutProcess(Item item, ItemAddress from, ItemAddress to, IBaseInventoryOperation operation)
+        public override void InProcess(ItemController executor, Item item, ItemAddress to, bool succeed, IBaseInventoryOperation operation, Callback callback)
         {
-            // Send to the Echo (Server)
-            // GClass2698 (Item Move Operation?)
-			if (operation is BaseInventoryOperation inventoryOperation)
-			{
-                MoveOperationDescriptor moveOperationDescriptor = new MoveOperationDescriptor();
-                // From Packet
-                Dictionary<string, object> fromPacket = new();
-                ItemAddressHelpers.ConvertItemAddressToDescriptor(from
-                    , ref fromPacket
-                    , out var gridItemAddressDescriptorFrom
-                    , out var slotItemAddressDescriptorFrom
-                    , out var stackSlotItemAddressDescriptorFrom);
-                //ItemAddressHelpers.ConvertDictionaryToAddress(fromPacket, out var grid, out var slot, out var stack);
-                moveOperationDescriptor.From = gridItemAddressDescriptorFrom;
-                // To Packet
-                Dictionary<string, object> toPacket = new();
-                ItemAddressHelpers.ConvertItemAddressToDescriptor(to
-                    , ref toPacket
-                    , out var gridItemAddressDescriptorTo
-                    , out var slotItemAddressDescriptorTo
-                    , out var stackSlotItemAddressDescriptorTo);
-                //ItemAddressHelpers.ConvertDictionaryToAddress(toPacket, out var gridTo, out var slotTo, out var stackTo);
-                moveOperationDescriptor.To = gridItemAddressDescriptorTo;
+            BepInLogger.LogInfo($"InProcess [executor]");
 
-                //moveOperationDescriptor.OperationId = moveOperation.Id;
-                moveOperationDescriptor.ItemId = item.Id;
-
-                var moveOpJson = moveOperationDescriptor.SITToJson();
-                MoveOperationPacket moveOperationPacket = new MoveOperationPacket(player.ProfileId, item.Id, item.TemplateId);
-                moveOperationPacket.MoveOpJson = moveOpJson;
-               
-                AkiBackendCommunication.Instance.PostDownWebSocketImmediately(moveOperationPacket.SITToJson());
-            }
-
-            // GClass2698 (Item Move Operation?)
-            if (operation is MoveInternalOperation moveOperation)
+            // Taken from EFT.Player.PlayerInventoryController
+            if (!succeed)
             {
-                MoveOperationDescriptor moveOperationDescriptor = new MoveOperationDescriptor();
-                // From Packet
-                Dictionary<string, object> fromPacket = new();
-                ItemAddressHelpers.ConvertItemAddressToDescriptor(moveOperation.From
-                    , ref fromPacket
-                    , out var gridItemAddressDescriptorFrom
-                    , out var slotItemAddressDescriptorFrom
-                    , out var stackSlotItemAddressDescriptorFrom);
-                //ItemAddressHelpers.ConvertDictionaryToAddress(fromPacket, out var grid, out var slot, out var stack);
-                moveOperationDescriptor.From = gridItemAddressDescriptorFrom;
-                // To Packet
-                Dictionary<string, object> toPacket = new();
-                ItemAddressHelpers.ConvertItemAddressToDescriptor(moveOperation.To
-                    , ref toPacket
-                    , out var gridItemAddressDescriptorTo
-                    , out var slotItemAddressDescriptorTo
-                    , out var stackSlotItemAddressDescriptorTo);
-                //ItemAddressHelpers.ConvertDictionaryToAddress(toPacket, out var gridTo, out var slotTo, out var stackTo);
-                moveOperationDescriptor.To = gridItemAddressDescriptorTo;
-
-                moveOperationDescriptor.OperationId = moveOperation.Id;
-                moveOperationDescriptor.ItemId = moveOperation.Item.Id;
-
-                var moveOpJson = moveOperationDescriptor.SITToJson();
-                MoveOperationPacket moveOperationPacket = new MoveOperationPacket(player.ProfileId, moveOperation.Item.Id, moveOperation.Item.TemplateId);
-                moveOperationPacket.MoveOpJson = moveOpJson;
-                //var str = moveOperationPacket.ToString();
-                //            BepInLogger.LogInfo(str);	
-                //var bytes = moveOperationPacket.Serialize();
-                //            AkiBackendCommunication.Instance.SendDataToPool(bytes);
-                //packet.Add("moveOpJson", moveOpJson);
-                //            packet.Add("m", "MoveOperation");
-
-                //BepInLogger.LogInfo(moveOperationPacket.SITToJson());
-                AkiBackendCommunication.Instance.PostDownWebSocketImmediately(moveOperationPacket.SITToJson());
+                callback.Succeed();
+                return;
             }
-        }
+            base.InProcess(executor, item, to, succeed, operation, callback);
+		}
 
-  //      public virtual void ReceiveOutProcess(Item item, ItemAddress from, ItemAddress to, IBaseInventoryOperation operation, Callback callback)
-  //      {
-  //          BepInLogger.LogInfo($"ReceiveOutProcess");
-  //          BepInLogger.LogInfo($"{item}");
-  //          BepInLogger.LogInfo($"{to}");
-  //          BepInLogger.LogInfo($"{operation}");
-		//	base.OutProcess(item, from, to, operation, callback);
-		//}
+        public override void OutProcess(Item item, ItemAddress from, ItemAddress to, IBaseInventoryOperation operation, Callback callback)
+        {
+            BepInLogger.LogInfo($"OutProcess [item]");
+			base.OutProcess(item, from, to, operation, callback);
 
-        //public override void OutProcess(ItemController executor, Item item, ItemAddress from, ItemAddress to, IBaseInventoryOperation operation, Callback callback)
-        //{
-        //    //BepInLogger.LogInfo($"CoopInventoryController: OutProcess [executor]");
-        //    //BepInLogger.LogInfo($"CoopInventoryController: {item}");
-        //    //BepInLogger.LogInfo($"CoopInventoryController: {to}");
-        //    //BepInLogger.LogInfo($"CoopInventoryController: {operation}");
-        //    base.OutProcess(executor, item, from, to, operation, callback);
-        //    //base.method_37(item, to, operation, callback);
-        //    //callback.Succeed();
-        //    //SendOutProcess(item, from, to, operation);
+		}
 
-        //}
+		public override void OutProcess(ItemController executor, Item item, ItemAddress from, ItemAddress to, IBaseInventoryOperation operation, Callback callback)
+		{
+			BepInLogger.LogInfo($"OutProcess [executor]");
 
-        //public virtual void ReceiveOutProcess(ItemController executor, Item item, ItemAddress from, ItemAddress to, IBaseInventoryOperation operation, Callback callback)
-        //{
-        //    //BepInLogger.LogInfo($"ReceiveOutProcess");
-        //    //BepInLogger.LogInfo($"{item}");
-        //    //BepInLogger.LogInfo($"{to}");
-        //    //BepInLogger.LogInfo($"{operation}");
-        //    base.OutProcess(executor, item, from, to, operation, callback);
-        //}
+			base.OutProcess(executor, item, from, to, operation, callback);	
+		}
+
+
+		public Dictionary<string, (AbstractInternalOperation, Callback)> OperationCallbacks = new();
+		public HashSet<string> SentExecutions = new();
 
         public override void Execute(AbstractInternalOperation operation, [CanBeNull] Callback callback)
         {
             BepInLogger.LogInfo($"Execute");
             BepInLogger.LogInfo($"{operation}");
+
+            if (callback == null)
+            {
+                callback = delegate
+                {
+                };
+            }
+            //EOperationStatus? localOperationStatus = null;
+            if (!vmethod_0(operation))
+            {
+                operation.Dispose();
+                callback.Fail("LOCAL: hands controller can't perform this operation");
+                return;
+            }
+            //EOperationStatus? serverOperationStatus;
             //base.Execute(operation, callback);
 
-			SendExecute(operation);
-            callback.Succeed();
+            var json = SendExecute(operation);
+			if(json == null)
+				return;
+
+			OperationCallbacks.Add(json, (operation, callback));
+
+   //         var vm = ReflectionHelpers.GetMethodForType(operation.GetType(), "vmethod_0");
+			//if(vm != null)
+			//	vm.Invoke(operation, new object[] { callback, false });
+
+
+            //callback.Fail("waiting");
+
+            //Task.Run(async () => { 
+
+            //	while(!ReceivedOperations.ContainsKey(json) || (ReceivedOperations.ContainsKey(json) && !ReceivedOperations[json]))
+            //	{
+            //		await Task.Delay(1000);
+            //		//await Task.Yield();
+            //		//TaskScheduler.Default.Do((s) =>
+            //                 //{
+            //			BepInLogger.LogInfo("Waiting");
+            //		//});
+            //		//await Task.Yield();
+            //             }
+            //	//            await Task.Yield();
+
+            //	//try
+            //	//{
+            //	//	BepInLogger.LogInfo("Attempting to Dispose of the Packet");
+            //	//	ReflectionHelpers.SetFieldOrPropertyFromInstance<CommandStatus>(operation, "commandStatus_0", CommandStatus.Succeed);
+            //	//	ReceivedOperationPacket.Dispose();
+            //	//	ReceivedOperationPacket = null;
+            //	//	callback?.Succeed();
+            //	//}
+            //	//catch(Exception ex)
+            //	//{
+
+            //	//}
+
+            //});
         }
 
-        private void SendExecute(AbstractInternalOperation operation)
+
+        private string SendExecute(AbstractInternalOperation operation)
 		{
+			string json = null;
             BepInLogger.LogInfo($"SendExecute");
+            ReflectionHelpers.SetFieldOrPropertyFromInstance<CommandStatus>(operation, "commandStatus_0", CommandStatus.Begin);
 
             if (operation is MoveInternalOperation moveOperation)
             {
@@ -184,7 +156,10 @@ namespace SIT.Core.Coop
                     , out var slotItemAddressDescriptorFrom
                     , out var stackSlotItemAddressDescriptorFrom);
 
-                moveOperationDescriptor.From = gridItemAddressDescriptorFrom;
+                moveOperationDescriptor.From = gridItemAddressDescriptorFrom != null ? gridItemAddressDescriptorFrom
+                    : slotItemAddressDescriptorFrom != null ? slotItemAddressDescriptorFrom
+                    : stackSlotItemAddressDescriptorFrom;
+
                 // To Packet
                 Dictionary<string, object> toPacket = new();
                 ItemAddressHelpers.ConvertItemAddressToDescriptor(moveOperation.To
@@ -192,25 +167,151 @@ namespace SIT.Core.Coop
                     , out var gridItemAddressDescriptorTo
                     , out var slotItemAddressDescriptorTo
                     , out var stackSlotItemAddressDescriptorTo);
-                moveOperationDescriptor.To = gridItemAddressDescriptorTo;
+
+                moveOperationDescriptor.To = gridItemAddressDescriptorTo != null ? gridItemAddressDescriptorTo 
+                    : slotItemAddressDescriptorTo != null ? slotItemAddressDescriptorTo
+                    : stackSlotItemAddressDescriptorTo;
 
                 moveOperationDescriptor.OperationId = moveOperation.Id;
                 moveOperationDescriptor.ItemId = moveOperation.Item.Id;
 
                 var moveOpJson = moveOperationDescriptor.SITToJson();
-                MoveOperationPacket moveOperationPacket = new MoveOperationPacket(player.ProfileId, moveOperation.Item.Id, moveOperation.Item.TemplateId);
+                MoveOperationPacket moveOperationPacket = new MoveOperationPacket(player.ProfileId, moveOperation.Item.Id, moveOperation.Item.TemplateId, moveOperation.To.GetType().ToString(), moveOperation.From != null ? moveOperation.From.GetType().ToString() : null);
                 moveOperationPacket.MoveOpJson = moveOpJson;
-                
-                //BepInLogger.LogInfo(moveOperationPacket.SITToJson());
-                AkiBackendCommunication.Instance.PostDownWebSocketImmediately(moveOperationPacket.SITToJson());
+
+				json = moveOperationPacket.SITToJson();
+              
             }
+			// Throw/Discard operation
+			else if (operation is MoveInternalOperation2 throwOperation)
+			{
+                ThrowOperationDescriptor throwOperationDescriptor = new ThrowOperationDescriptor();
+
+                throwOperationDescriptor.OperationId = throwOperation.Id;
+                throwOperationDescriptor.ItemId = throwOperation.Item.Id;
+
+                var moveOpJson = throwOperationDescriptor.SITToJson();
+                MoveOperationPacket moveOperationPacket = new MoveOperationPacket(player.ProfileId, throwOperation.Item.Id, throwOperation.Item.TemplateId, null, null);
+				moveOperationPacket.Method = "ThrowOperation";
+                moveOperationPacket.MoveOpJson = moveOpJson;
+
+                json = moveOperationPacket.SITToJson();
+            }
+
+			if (OperationCallbacks.ContainsKey(json))
+				return null;
+
+			if (SentExecutions.Contains(json)) 
+				return null;
+
+            AkiBackendCommunication.Instance.PostDownWebSocketImmediately(json);
+            SentExecutions.Add(json);
+            return json;
         }
 
-        public void ReceiveExecute(AbstractInternalOperation operation)
+		private AbstractInternalOperation ReceivedOperationPacket { get; set; }
+		private Dictionary<string, bool> ReceivedOperations { get; } = new Dictionary<string, bool>();
+
+        public void ReceiveExecute(AbstractInternalOperation operation, string packetJson)
         {
+            ReceivedOperations.Add(packetJson, false);
+
             BepInLogger.LogInfo($"ReceiveExecute");
-            BepInLogger.LogInfo(operation);
-            base.Execute(operation, (result) => { BepInLogger.LogInfo(result); });
+            BepInLogger.LogInfo($"{packetJson}");
+            BepInLogger.LogInfo($"{operation}");
+            ReceivedOperationPacket = operation;
+            ReflectionHelpers.SetFieldOrPropertyFromInstance<CommandStatus>(operation, "commandStatus_0", CommandStatus.Succeed);
+
+
+            if (operation is MoveInternalOperation moveInternalOperation) 
+			{
+
+				//var moveResult = ItemMovementHandler.Move(moveInternalOperation.Item, moveInternalOperation.To, this, false);
+
+                //OutProcess(moveInternalOperation.Item, moveInternalOperation.From, moveInternalOperation.To, moveInternalOperation, (outProcessResult) =>
+                //{
+                //    InProcess(this, moveInternalOperation.Item, moveInternalOperation.To, moveResult.Succeeded, moveInternalOperation, (inProcessResult) =>
+                //    {
+
+                //        BepInLogger.LogInfo("InProcess");
+                //        if (OperationCallbacks.ContainsKey(packetJson))
+                //        {
+                //            OperationCallbacks[packetJson].Item2.Succeed();
+                //            //OperationCallbacks[packetJson].Item1.Dispose();
+                //            OperationCallbacks.Remove(packetJson);
+                //        }
+                //        else
+                //        {
+                //            BepInLogger.LogError($"Unable to find OperationCallback for");
+                //            BepInLogger.LogError(packetJson);
+                //        }
+
+                //    });
+
+                //});
+
+                var vm = ReflectionHelpers.GetMethodForType(operation.GetType(), "vmethod_0");
+                if (vm != null)
+                {
+                    var moveResult = ItemMovementHandler.Move(moveInternalOperation.Item, moveInternalOperation.To, this, false);
+
+                    vm.Invoke(operation, new object[] { new Comfort.Common.Callback((result) => {
+
+                        if (OperationCallbacks.ContainsKey(packetJson))
+                        {
+                            moveResult.Value.RaiseEvents(this, CommandStatus.Succeed);
+                            OperationCallbacks[packetJson].Item2.Succeed();
+                            //OperationCallbacks[packetJson].Item1.Dispose();
+                            OperationCallbacks.Remove(packetJson);
+                        }
+                        else
+                        {
+                            moveResult.Value.RaiseEvents(this, CommandStatus.Failed);
+                            BepInLogger.LogError($"Unable to find OperationCallback for");
+                            BepInLogger.LogError(packetJson);
+                        }
+
+
+                    }), false });
+                }
+
+            }
+			// Throw/Discard Operation
+            else if(operation is MoveInternalOperation2 discardOperation)
+			{
+                //var discardResult = ItemMovementHandler.Discard(discardOperation.Item, this, false, true);
+
+                OutProcess(discardOperation.Item, discardOperation.)
+
+                //var vm = ReflectionHelpers.GetMethodForType(operation.GetType(), "vmethod_0");
+                //if (vm != null)
+                //    vm.Invoke(operation, new object[] { new Comfort.Common.Callback((result) => {
+
+                //        if (OperationCallbacks.ContainsKey(packetJson))
+                //        {
+                //            var discardResult = ItemMovementHandler.Discard(discardOperation.Item, this, false, false);
+                //            discardResult.Value.RaiseEvents(this, CommandStatus.Succeed);
+
+                //            OperationCallbacks[packetJson].Item2.Succeed();
+                //            //OperationCallbacks[packetJson].Item1.Dispose();
+                //            OperationCallbacks.Remove(packetJson);
+                //        }
+                //        else
+                //        {
+                //            //discardResult.Value.RaiseEvents(this, CommandStatus.Failed);
+                //            BepInLogger.LogError($"Unable to find OperationCallback for");
+                //            BepInLogger.LogError(packetJson);
+                //        }
+
+
+                //    }), false });
+
+            }
+            else
+            {
+                Logger.LogError($"Unknown Operation: {operation}");
+            }
+
         }
 
         public override void Execute(SearchContentOperation operation, Callback callback)
@@ -490,11 +591,14 @@ namespace SIT.Core.Coop
             return result;
         }
 
+        Random randomGenThrowNumber = new Random();
+
         public override void ThrowItem(Item item, IEnumerable<ItemsCount> destroyedItems, Callback callback = null, bool downDirection = false)
         {
             //BepInLogger.LogInfo("ThrowItem");
-            destroyedItems = new List<ItemsCount>();
-            base.ThrowItem(item, destroyedItems, callback, downDirection);
+            //destroyedItems = new List<ItemsCount>();
+            //base.ThrowItem(item, destroyedItems, callback, downDirection);
+            Execute(new MoveInternalOperation2(ushort_0++, this, item, destroyedItems, player, downDirection), callback);
         }
 
         public void ReceiveUnloadMagazineFromServer(UnloadMagazinePacket unloadMagazinePacket)
