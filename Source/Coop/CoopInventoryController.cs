@@ -105,11 +105,18 @@ namespace SIT.Core.Coop
                     BepInLogger.LogInfo("ActionCallback");
                     operation.vmethod_0(delegate (IResult executeResult)
                     {
-                        operation.Dispose();
-                        callback.Invoke(executeResult);
-                        BepInLogger.LogInfo("operation.vmethod_0");
+                        BepInLogger.LogInfo($"operation.vmethod_0 : {executeResult}");
+                        if (executeResult.Succeed)
+                        {
+                            callback.Invoke(executeResult);
+                            ReflectionHelpers.SetFieldOrPropertyFromInstance<CommandStatus>(operation, "commandStatus_0", CommandStatus.Succeed);
+                            operation.Dispose();
+                        }
+                        else
+                        {
+                            ReflectionHelpers.SetFieldOrPropertyFromInstance<CommandStatus>(operation, "commandStatus_0", CommandStatus.Failed);
+                        }
 
-                        ReflectionHelpers.SetFieldOrPropertyFromInstance<CommandStatus>(operation, "commandStatus_0", CommandStatus.Succeed);
                     });
 
                 }
@@ -187,6 +194,51 @@ namespace SIT.Core.Coop
                 json = moveOperationPacket.SITToJson();
             }
 
+
+            else 
+            {
+                var oneitemoperation = operation as IOneItemOperation;
+                if (oneitemoperation != null)
+                {
+                    BepInLogger.LogInfo("SendExecute:IOneItemOperation");
+
+                    MoveOperationDescriptor moveOperationDescriptor = new MoveOperationDescriptor();
+                    // From Packet
+                    Dictionary<string, object> fromPacket = new();
+                    ItemAddressHelpers.ConvertItemAddressToDescriptor(oneitemoperation.From1
+                        , ref fromPacket
+                        , out var gridItemAddressDescriptorFrom
+                        , out var slotItemAddressDescriptorFrom
+                        , out var stackSlotItemAddressDescriptorFrom);
+
+                    moveOperationDescriptor.From = gridItemAddressDescriptorFrom != null ? gridItemAddressDescriptorFrom
+                        : slotItemAddressDescriptorFrom != null ? slotItemAddressDescriptorFrom
+                        : stackSlotItemAddressDescriptorFrom;
+
+                    // To Packet
+                    Dictionary<string, object> toPacket = new();
+                    ItemAddressHelpers.ConvertItemAddressToDescriptor(oneitemoperation.To1
+                        , ref toPacket
+                        , out var gridItemAddressDescriptorTo
+                        , out var slotItemAddressDescriptorTo
+                        , out var stackSlotItemAddressDescriptorTo);
+
+                    moveOperationDescriptor.To = gridItemAddressDescriptorTo != null ? gridItemAddressDescriptorTo
+                        : slotItemAddressDescriptorTo != null ? slotItemAddressDescriptorTo
+                        : stackSlotItemAddressDescriptorTo;
+
+                    moveOperationDescriptor.OperationId = operation.Id;
+                    moveOperationDescriptor.ItemId = oneitemoperation.Item1.Id;
+
+                    var moveOpJson = moveOperationDescriptor.SITToJson();
+
+                    MoveOperationPacket moveOperationPacket = new MoveOperationPacket(player.ProfileId, oneitemoperation.Item1.Id, oneitemoperation.Item1.TemplateId, oneitemoperation.To1 != null ? oneitemoperation.To1.GetType().ToString() : null, oneitemoperation.From1 != null ? oneitemoperation.From1.GetType().ToString() : null);
+                    moveOperationPacket.MoveOpJson = moveOpJson;
+
+                    json = moveOperationPacket.SITToJson();
+                }
+            }
+
             if (json == null)
                 return null;
 
@@ -227,111 +279,6 @@ namespace SIT.Core.Coop
                 });
 
             }
-
-            //         if (operation is MoveInternalOperation moveInternalOperation) 
-            //{
-            //             var vm = ReflectionHelpers.GetMethodForType(operation.GetType(), "vmethod_0");
-            //             if (vm != null)
-            //             {
-            //                 var moveResult = ItemMovementHandler.Move(moveInternalOperation.Item, moveInternalOperation.To, this, false);
-
-            //                 operation.vmethod_0((result) =>
-            //                 {
-            //                     if (OperationCallbacks.ContainsKey(packetJson))
-            //                     {
-            //                         moveResult.Value.RaiseEvents(this, CommandStatus.Succeed);
-            //                         OperationCallbacks[packetJson].Item2.Succeed();
-            //                         //OperationCallbacks[packetJson].Item1.Dispose();
-            //                         OperationCallbacks.Remove(packetJson);
-            //                     }
-            //                     else
-            //                     {
-            //                         //moveResult.Value.RaiseEvents(this, CommandStatus.Failed);
-            //                         //BepInLogger.LogError($"Unable to find OperationCallback for");
-            //                         //BepInLogger.LogError(packetJson);
-
-            //                         // This will be received from another client. Just update.
-            //                         moveResult.Value.RaiseEvents(this, CommandStatus.Succeed);
-            //                     }
-
-
-            //                 }, false 
-            //                 );
-
-            //                 operation.vmethod_0(delegate (IResult result)
-            //                 {
-
-            //                     if (OperationCallbacks.ContainsKey(packetJson))
-            //                     {
-            //                         OperationCallbacks[packetJson].Item2.Succeed();
-            //                         OperationCallbacks[packetJson].Item3();
-            //                         OperationCallbacks.Remove(packetJson);
-            //                     }
-            //                     moveResult.Value.RaiseEvents(this, CommandStatus.Succeed);
-
-            //                 }, false);
-
-
-
-            //             }
-
-            //         }
-            // Throw/Discard Operation
-            //         else if(operation is MoveInternalOperation2 discardOperation)
-            //{
-            //             var discardResult = ItemMovementHandler.Discard(discardOperation.Item, this, false, true);
-
-            //             operation.vmethod_0(delegate (IResult result)
-            //             {
-            //                 if (!result.Succeed)
-            //                 {
-            //                     BepInLogger.LogError(string.Format("[{0}][{5}] {1} - Local operation failed: {2} - {3}\r\nError: {4}", UnityEngine.Time.frameCount, ID, operation.Id, operation, result.Error, Name));
-            //                 }
-            //             if (OperationCallbacks.ContainsKey(packetJson))
-            //             {
-            //                 OperationCallbacks[packetJson].Item2.Succeed();
-            //                 OperationCallbacks[packetJson].Item3();
-            //                 OperationCallbacks.Remove(packetJson);
-            //             }
-            //             else
-            //             {
-            //                 operation.vmethod_0(delegate (IResult result)
-            //                 {
-
-            //                 });
-            //                 BepInLogger.LogError($"Unable to find OperationCallback for");
-            //                 BepInLogger.LogError(packetJson);
-            //             }
-            //             });
-
-            //             var vm = ReflectionHelpers.GetMethodForType(operation.GetType(), "vmethod_0");
-            //             if (vm != null)
-            //                 vm.Invoke(operation, new object[] { new Comfort.Common.Callback((result) => {
-
-            //                     if (OperationCallbacks.ContainsKey(packetJson))
-            //                     {
-            //                         var discardResult = ItemMovementHandler.Discard(discardOperation.Item, this, false, false);
-            //                         discardResult.Value.RaiseEvents(this, CommandStatus.Succeed);
-
-            //                         OperationCallbacks[packetJson].Item2.Succeed();
-            //                         //OperationCallbacks[packetJson].Item1.Dispose();
-            //                         OperationCallbacks.Remove(packetJson);
-            //                     }
-            //                     else
-            //                     {
-            //                         //discardResult.Value.RaiseEvents(this, CommandStatus.Failed);
-            //                         BepInLogger.LogError($"Unable to find OperationCallback for");
-            //                         BepInLogger.LogError(packetJson);
-            //                     }
-
-
-            //                 }), false });
-
-            //         }
-            //         else
-            //         {
-            //             Logger.LogError($"Unknown Operation: {operation}");
-            //         }
 
         }
 
