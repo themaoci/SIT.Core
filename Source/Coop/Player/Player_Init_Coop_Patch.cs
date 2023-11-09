@@ -57,12 +57,12 @@ namespace SIT.Coop.Core.Player
                 if (!Singleton<GameWorld>.Instance.RegisteredPlayers.Any(x => x.ProfileId == profileId))
                     Singleton<GameWorld>.Instance.RegisterPlayer(player);
 
-                if(CullingManager.Instance != null)
-                {
-                    CullingManager.Instance.ForceEnable(false);
-                    GameObject.Destroy(CullingManager.Instance.gameObject);
-                    CullingManager.Destroy(CullingManager.Instance);
-                }
+                //if(CullingManager.Instance != null)
+                //{
+                //    CullingManager.Instance.ForceEnable(false);
+                //    GameObject.Destroy(CullingManager.Instance.gameObject);
+                //    CullingManager.Destroy(CullingManager.Instance);
+                //}
             
             }
             else
