@@ -69,7 +69,7 @@ namespace SIT.Core.Coop
                 slotItemAddressDescriptor = PatchConstants.SITParseJson<SlotItemAddressDescriptor>(dict[DICTNAMES_SlotItemAddressDescriptor].ToString());
             }
 
-            if (dict.ContainsKey(DICTNAMES_SlotItemAddressDescriptor))
+            if (dict.ContainsKey(DICTNAMES_StackSlotItemAddressDescriptor))
             {
                 stackSlotItemAddressDescriptor = PatchConstants.SITParseJson<StackSlotItemAddressDescriptor>(dict[DICTNAMES_StackSlotItemAddressDescriptor].ToString());
             }

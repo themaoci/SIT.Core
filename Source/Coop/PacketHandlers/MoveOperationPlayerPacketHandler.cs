@@ -129,8 +129,21 @@ namespace SIT.Core.Coop.PacketHandlers
 
             if (ItemFinder.TryFindItem(moveOpDesc.ItemId, out var item))
             {
-                MoveInternalOperation moveOperation = new MoveInternalOperation(moveOpDesc.OperationId, pic, item, pic.ToItemAddress(moveOpDesc.To), new List<ItemsCount>());
-                pic.ReceiveExecute(moveOperation, packetJson);
+                // This is a bad way to handle the error that the item doesn't exist on PlayerInventoryController
+                try
+                {
+                    MoveInternalOperation moveOperation = new MoveInternalOperation(moveOpDesc.OperationId, pic, item, pic.ToItemAddress(moveOpDesc.To), new List<ItemsCount>());
+                    pic.ReceiveExecute(moveOperation, packetJson);
+                }
+                catch
+                {
+                    ItemController itemController = null;
+                    if(ItemFinder.TryFindItemController(moveOpDesc.To.Container.ParentId, ref itemController))
+                    {
+                        MoveInternalOperation moveOperation = new MoveInternalOperation(moveOpDesc.OperationId, itemController, item, itemController.ToItemAddress(moveOpDesc.To), new List<ItemsCount>());
+                        pic.ReceiveExecute(moveOperation, packetJson);
+                    }
+                }
             }
             //pic.ReceiveDoOperation(moveOpDesc);
         }
