@@ -143,6 +143,10 @@ namespace SIT.Core.Coop.PacketHandlers
                         MoveInternalOperation moveOperation = new MoveInternalOperation(moveOpDesc.OperationId, itemController, item, itemController.ToItemAddress(moveOpDesc.To), new List<ItemsCount>());
                         pic.ReceiveExecute(moveOperation, packetJson);
                     }
+                    else
+                    {
+                        Logger.LogError("ItemController not found!");
+                    }
                 }
             }
             //pic.ReceiveDoOperation(moveOpDesc);

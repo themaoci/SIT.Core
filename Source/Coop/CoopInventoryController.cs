@@ -70,8 +70,8 @@ namespace SIT.Core.Coop
 		}
 
 
-		public Dictionary<string, (AbstractInternalOperation, Callback, Action)> OperationCallbacks = new();
-		public HashSet<string> SentExecutions = new();
+		public Dictionary<string, (AbstractInternalOperation, Callback, Action)> OperationCallbacks { get; } = new();
+		public HashSet<string> SentExecutions { get; } = new();
 
         public override void Execute(AbstractInternalOperation operation, [CanBeNull] Callback callback)
         {
@@ -101,25 +101,38 @@ namespace SIT.Core.Coop
             OperationCallbacks.Add(json, (operation, callback, new Action(() => {
 
                 //if (result.Succeed)
-                {
+                //{
                     BepInLogger.LogInfo("ActionCallback");
                     operation.vmethod_0(delegate (IResult executeResult)
                     {
                         BepInLogger.LogInfo($"operation.vmethod_0 : {executeResult}");
                         if (executeResult.Succeed)
                         {
-                            callback.Invoke(executeResult);
                             ReflectionHelpers.SetFieldOrPropertyFromInstance<CommandStatus>(operation, "commandStatus_0", CommandStatus.Succeed);
+                            
+                            var baseInvOp = (BaseInventoryOperation)ReflectionHelpers.GetFieldFromTypeByFieldType(operation.GetType(), typeof(BaseInventoryOperation))?.GetValue(operation);
+                            if(baseInvOp != null)
+                            {
+                                baseInvOp.RaiseEvents(CommandStatus.Succeed);
+                            }
+                            var oneItemOp = (OneItemOperation)ReflectionHelpers.GetFieldFromTypeByFieldType(operation.GetType(), typeof(OneItemOperation))?.GetValue(operation);
+                            if(oneItemOp != null)
+                            {
+                                oneItemOp.RaiseEvents(CommandStatus.Succeed);
+                            }
+                            callback.Invoke(executeResult);
+
                             operation.Dispose();
                         }
                         else
                         {
                             ReflectionHelpers.SetFieldOrPropertyFromInstance<CommandStatus>(operation, "commandStatus_0", CommandStatus.Failed);
                         }
+                        operation.Dispose();
 
-                    });
+                    }, false);
 
-                }
+                //}
 
 
             }
@@ -232,7 +245,13 @@ namespace SIT.Core.Coop
 
                     var moveOpJson = moveOperationDescriptor.SITToJson();
 
-                    MoveOperationPacket moveOperationPacket = new MoveOperationPacket(player.ProfileId, oneitemoperation.Item1.Id, oneitemoperation.Item1.TemplateId, oneitemoperation.To1 != null ? oneitemoperation.To1.GetType().ToString() : null, oneitemoperation.From1 != null ? oneitemoperation.From1.GetType().ToString() : null);
+                    MoveOperationPacket moveOperationPacket = new MoveOperationPacket(
+                        player.ProfileId
+                        , oneitemoperation.Item1.Id
+                        , oneitemoperation.Item1.TemplateId
+                        , oneitemoperation.To1 != null ? oneitemoperation.To1.GetType().ToString() : null
+                        , oneitemoperation.From1 != null ? oneitemoperation.From1.GetType().ToString() : null
+                        , oneitemoperation.GetType().FullName);
                     moveOperationPacket.MoveOpJson = moveOpJson;
 
                     json = moveOperationPacket.SITToJson();
