@@ -120,8 +120,7 @@ namespace SIT.Core.Coop
                             {
                                 oneItemOp.RaiseEvents(CommandStatus.Succeed);
                             }
-                            callback.Invoke(executeResult);
-
+                            //callback?.Invoke(executeResult);
                             operation.Dispose();
                         }
                         else
@@ -184,8 +183,28 @@ namespace SIT.Core.Coop
                 moveOperationDescriptor.OperationId = moveOperation.Id;
                 moveOperationDescriptor.ItemId = moveOperation.Item.Id;
 
+                var isToAddressPlayerInventoryAddress = false;
+                // There doesn't seem to be a tester for this?
+                try
+                {
+                    isToAddressPlayerInventoryAddress = player.Inventory.IsEquipmentAddress(this.ToItemAddress(moveOperationDescriptor.To));
+                }
+                catch(Exception)
+                {
+
+                }
+                BepInLogger.LogInfo($"isToAddressEquipmentAddress:{isToAddressPlayerInventoryAddress}");
+
                 var moveOpJson = moveOperationDescriptor.SITToJson();
-                MoveOperationPacket moveOperationPacket = new MoveOperationPacket(player.ProfileId, moveOperation.Item.Id, moveOperation.Item.TemplateId, moveOperation.To.GetType().ToString(), moveOperation.From != null ? moveOperation.From.GetType().ToString() : null);
+                MoveOperationPacket moveOperationPacket 
+                    = new MoveOperationPacket(
+                        player.ProfileId
+                        , moveOperation.Item.Id
+                        , moveOperation.Item.TemplateId
+                        , moveOperation.To.GetType().ToString()
+                        , moveOperation.From != null ? moveOperation.From.GetType().ToString() : null
+                        , null
+                        );
                 moveOperationPacket.MoveOpJson = moveOpJson;
 
 				json = moveOperationPacket.SITToJson();
@@ -272,20 +291,18 @@ namespace SIT.Core.Coop
             return json;
         }
 
-		//private AbstractInternalOperation ReceivedOperationPacket { get; set; }
-		private Dictionary<string, bool> ReceivedOperations { get; } = new Dictionary<string, bool>();
-
         public void ReceiveExecute(AbstractInternalOperation operation, string packetJson)
         {
-            ReceivedOperations.Add(packetJson, false);
-
             BepInLogger.LogInfo($"ReceiveExecute");
             BepInLogger.LogInfo($"{packetJson}");
             BepInLogger.LogInfo($"{operation}");
+
             //ReceivedOperationPacket = operation;
             ReflectionHelpers.SetFieldOrPropertyFromInstance<CommandStatus>(operation, "commandStatus_0", CommandStatus.Begin);
             if (OperationCallbacks.ContainsKey(packetJson))
             {
+                BepInLogger.LogInfo($"Using OperationCallbacks!");
+
                 OperationCallbacks[packetJson].Item2.Succeed();
                 OperationCallbacks[packetJson].Item3();
                 OperationCallbacks.Remove(packetJson);

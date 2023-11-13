@@ -135,11 +135,21 @@ namespace SIT.Core.Coop.PacketHandlers
                     MoveInternalOperation moveOperation = new MoveInternalOperation(moveOpDesc.OperationId, pic, item, pic.ToItemAddress(moveOpDesc.To), new List<ItemsCount>());
                     pic.ReceiveExecute(moveOperation, packetJson);
                 }
-                catch
+                catch (Exception ex)
                 {
+                    Logger.LogError($"{packetJson}");
+                    Logger.LogError($"{ex}");
+
                     ItemController itemController = null;
                     if(ItemFinder.TryFindItemController(moveOpDesc.To.Container.ParentId, ref itemController))
                     {
+                        Logger.LogError("ItemController not found! Falling back to To Container");
+                        MoveInternalOperation moveOperation = new MoveInternalOperation(moveOpDesc.OperationId, itemController, item, itemController.ToItemAddress(moveOpDesc.To), new List<ItemsCount>());
+                        pic.ReceiveExecute(moveOperation, packetJson);
+                    }
+                    else if (ItemFinder.TryFindItemController(moveOpDesc.From.Container.ParentId, ref itemController))
+                    {
+                        Logger.LogError("ItemController not found! Falling back to From Container");
                         MoveInternalOperation moveOperation = new MoveInternalOperation(moveOpDesc.OperationId, itemController, item, itemController.ToItemAddress(moveOpDesc.To), new List<ItemsCount>());
                         pic.ReceiveExecute(moveOperation, packetJson);
                     }
