@@ -16,8 +16,8 @@ namespace SIT.Core.SP.PlayerPatches.Health
 
         public OnDeadPatch(BepInEx.Configuration.ConfigFile config)
         {
-            var enableDeathMessage = config.Bind("SIT", "Enable Death Message", true);
-            if (enableDeathMessage != null && enableDeathMessage.Value == true)
+            var enableDeathMessage = config.Bind("SIT", "EnableDeathMessage", true);
+            if (enableDeathMessage != null)
             {
                 DisplayDeathMessage = enableDeathMessage.Value;
 
