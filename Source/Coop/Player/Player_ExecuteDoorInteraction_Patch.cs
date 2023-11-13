@@ -90,7 +90,8 @@ namespace SIT.Coop.Core.Player
             if (!CoopGameComponent.TryGetCoopGameComponent(out CoopGameComponent coopGameComponent))
                 return;
 
-            if (!ItemFinder.TryFindItemController(player.ProfileId, out ItemController itemController))
+            ItemController itemController = null;
+            if (!ItemFinder.TryFindItemController(player.ProfileId, ref itemController))
                 return;
 
             WorldInteractiveObject worldInteractiveObject = coopGameComponent.ListOfInteractiveObjects.FirstOrDefault(x => x.Id == dict["WIOId"].ToString());

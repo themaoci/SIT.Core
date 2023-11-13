@@ -54,7 +54,8 @@ namespace SIT.Core.Coop.Player.Proceed
             if (knife.Item is Knife0 knife0)
             {
                 Dictionary<string, object> args = new();
-                ItemAddressHelpers.ConvertItemAddressToDescriptor(knife0.CurrentAddress, ref args);
+                ItemAddressHelpers.ConvertItemAddressToDescriptor(knife0.CurrentAddress, ref args
+                    , out _, out _, out _);
 
                 args.Add("m", "ProceedQuickKnifeKick");
                 args.Add("item.id", knife0.Id);

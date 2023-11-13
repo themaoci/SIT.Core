@@ -35,7 +35,8 @@ namespace SIT.Coop.Core.Player
                 return;
             }
 
-            if (!ItemFinder.TryFindItemController(__instance.ProfileId, out ItemController itemController))
+            ItemController itemController = null;
+            if (!ItemFinder.TryFindItemController(__instance.ProfileId, ref itemController))
                 return;
 
             if (__instance.MovementContext.StationaryWeapon != null)
@@ -63,10 +64,10 @@ namespace SIT.Coop.Core.Player
                 playerInventoryController.ResetDiscardLimits();
             }
 
-            if (PlayerInventoryController_ThrowItem_Patch.CallLocally.Contains(__instance.ProfileId))
-                PlayerInventoryController_ThrowItem_Patch.CallLocally.Remove(__instance.ProfileId);
+            //if (PlayerInventoryController_ThrowItem_Patch.CallLocally.Contains(__instance.ProfileId))
+            //    PlayerInventoryController_ThrowItem_Patch.CallLocally.Remove(__instance.ProfileId);
 
-            PlayerInventoryController_ThrowItem_Patch.PostPatch(playerInventoryController, backpack, __instance.Profile);
+            //PlayerInventoryController_ThrowItem_Patch.PostPatch(playerInventoryController, backpack, __instance.Profile);
         }
 
         public override void Replicated(EFT.Player player, Dictionary<string, object> dict)
