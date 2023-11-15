@@ -105,6 +105,7 @@ So I ported many of SPT-Aki features into this module. My end-goal would be to r
 - SPT-Aki team
 - MTGA team
 - SPT-Aki Modding Community
+- TheMaoci (Original code from JET Binaries, examples: "LegalGameCopy")
 - DrakiaXYZ ([BigBrain](https://github.com/DrakiaXYZ/SPT-BigBrain))
 - Dvize ([NoBushESP](https://github.com/dvize/NoBushESP))
 - SIT Contributors

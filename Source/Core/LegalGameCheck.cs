@@ -10,6 +10,12 @@ using UnityEngine;
 
 namespace SIT.Core.Core
 {
+    /// <summary>
+    /// This code checks if player has legit game installed. 
+    /// Created by: TheMaoci (included in JET.Core binaries - source code is private) 
+    /// IsGameFound => LegalityCheck
+    /// Info: its "cut version" cause BSG was not bothered with updating variables in registry on each update or installation of the game
+    /// </summary>
     public class LegalGameCheck
     {
         public static string IllegalMessage { get; }
